@@ -211,10 +211,13 @@
     const form = document.getElementById('chat-form');
     const input = document.getElementById('user-input');
 
-    // NEW GIF URL
+    // GIF URL for the thinking animation
     const thinkingGifUrl = 'https://i.giphy.com/koxVXnnmaQwllyovVG.webp';
-
     let currentThinkingBubble = null; // To hold the reference to the thinking message bubble
+
+    // Define the delay here (in milliseconds) before the AI request is sent
+    // Adjust this value to make the GIF play longer or shorter.
+    const delayMilliseconds = 1500; // Example: 1.5 seconds
 
     // Helper function to add messages to the chat interface
     function addMessage(content, role, isThinking = false) {
@@ -236,86 +239,90 @@
       chat.scrollTop = chat.scrollHeight; // Ensure it's visible immediately
     }
 
-    // Function to hide the GIF (by updating the bubble content)
+    // Function to hide the GIF (by clearing the content of the bubble)
+    // This function doesn't actually hide the bubble, but prepares it for new content.
     function hideThinkingGif() {
-      // No specific action needed here other than clearing reference
-      // The content of currentThinkingBubble will be overwritten by the actual response
+      // The currentThinkingBubble's content will be overwritten by the actual response,
+      // so no explicit hiding or clearing is needed here.
     }
 
-    // Function to add the initial greeting message
+    // Function to add the initial greeting message when the page loads
     function addInitialGreeting() {
       addMessage("Hi, I'm Jerry. How can I help?", 'bot');
     }
 
-    // Call the function when the DOM is fully loaded
+    // Call the initial greeting function when the DOM is fully loaded
     document.addEventListener('DOMContentLoaded', addInitialGreeting);
 
+    // Event listener for the chat form submission
     form.addEventListener('submit', async (e) => {
-      e.preventDefault();
+      e.preventDefault(); // Prevent default form submission and page reload
       const message = input.value.trim();
-      if (!message) return;
+      if (!message) return; // Do nothing if the input is empty
 
-      // Add user message
+      // Add user message to the chat
       addMessage(message, 'user');
-      input.value = '';
+      input.value = ''; // Clear the input field
 
-      // Show the GIF where the bot's response will be
+      // Show the GIF where the bot's response will appear
       showThinkingGifInBubble();
 
-      try {
-        // Your actual Cloudflare Worker URL
-        const workerUrl = 'https://jerrymarkten.jeremyhuangmiami.workers.dev/';
-        const res = await fetch(workerUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            model: "gemma2-9b-it",
-            messages: [
-              { role: "system", content: "You are a helpful assistant." },
-              { role: "user", content: message }
-            ],
-            temperature: 0.7
-          })
-        });
+      // Introduce a delay before making the actual API call to Cloudflare Worker
+      setTimeout(async () => {
+        try {
+          // Your actual Cloudflare Worker URL
+          const workerUrl = 'https://jerrymarkten.jeremyhuangmiami.workers.dev/';
+          const res = await fetch(workerUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: "gemma2-9b-it",
+              messages: [
+                { role: "system", content: "You are a helpful assistant." },
+                { role: "user", content: message }
+              ],
+              temperature: 0.7
+            })
+          });
 
-        if (!res.ok) {
-            const errorJson = await res.json().catch(() => ({ error: 'Unknown worker error or invalid JSON response.' }));
-            throw new Error(errorJson.error || `HTTP error! Status: ${res.status}`);
+          if (!res.ok) {
+              const errorJson = await res.json().catch(() => ({ error: 'Unknown worker error or invalid JSON response.' }));
+              throw new Error(errorJson.error || `HTTP error! Status: ${res.status}`);
+          }
+
+          const data = await res.json();
+          const botResponseContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
+
+          // Hide the GIF (this simply stops any continuous animation if applicable,
+          // the content replacement is what visually 'hides' it)
+          hideThinkingGif();
+
+          // Update the content of the thinking bubble with the actual AI response
+          if (currentThinkingBubble) {
+              currentThinkingBubble.innerHTML = botResponseContent;
+              currentThinkingBubble.classList.remove('thinking'); // Remove the 'thinking' class and its specific styles
+              // After updating the content, tell MathJax to render any new math expressions
+              if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise([currentThinkingBubble]).then(() => {
+                  console.log('MathJax typesetting complete for new message.');
+                }).catch((err) => console.error('MathJax typesetting failed:', err));
+              }
+          }
+
+        } catch (err) {
+          // Handle errors during the fetch operation
+          hideThinkingGif(); // Hide GIF even if an error occurs
+          if (currentThinkingBubble) {
+              currentThinkingBubble.innerHTML = `[Error] ${err.message}`;
+              currentThinkingBubble.classList.remove('thinking');
+          } else {
+               // Fallback if currentThinkingBubble was not set for some reason
+              addMessage(`[Error] ${err.message}`, 'bot');
+          }
+        } finally {
+          currentThinkingBubble = null; // Clear the reference to the thinking bubble
         }
-
-        const data = await res.json();
-        const botResponseContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
-
-        // Hide the GIF (by stopping any animation if it were a complex one)
-        // For a simple GIF, it's just about replacing the content.
-        hideThinkingGif();
-
-        // Update the content of the thinking bubble with the actual response
-        if (currentThinkingBubble) {
-            currentThinkingBubble.innerHTML = botResponseContent;
-            currentThinkingBubble.classList.remove('thinking'); // Remove thinking class and its specific styles
-            // After updating the content, tell MathJax to render the new math
-            if (typeof MathJax !== 'undefined') {
-              MathJax.typesetPromise([currentThinkingBubble]).then(() => {
-                console.log('MathJax typesetting complete for new message.');
-              }).catch((err) => console.error('MathJax typesetting failed:', err));
-            }
-        }
-
-
-      } catch (err) {
-        // Handle error: Hide GIF and show error message
-        hideThinkingGif();
-        if (currentThinkingBubble) {
-            currentThinkingBubble.innerHTML = `[Error] ${err.message}`;
-            currentThinkingBubble.classList.remove('thinking');
-        } else {
-             // Fallback if somehow currentThinkingBubble isn't set
-            addMessage(`[Error] ${err.message}`, 'bot');
-        }
-      } finally {
-        currentThinkingBubble = null; // Clear reference
-      }
+      }, delayMilliseconds); // Apply the defined delay here
     });
   </script>
 </body>
