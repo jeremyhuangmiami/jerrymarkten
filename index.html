@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Jerry Mark 10 - Chatbot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0e0e0e;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background: #1c1c1c;
+      padding: 1em;
+      text-align: center;
+      font-size: 1.4em;
+      font-weight: bold;
+      border-bottom: 1px solid #333;
+    }
+
+    #chat {
+      flex: 1;
+      padding: 1em;
+      overflow-y: auto;
+      background: #121212;
+    }
+
+    .msg {
+      margin-bottom: 1.5em;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .user {
+      color: #00d4ff;
+    }
+
+    .bot {
+      color: #d4ff00;
+    }
+
+    form {
+      display: flex;
+      border-top: 1px solid #333;
+      background: #1a1a1a;
+    }
+
+    input {
+      flex: 1;
+      padding: 1em;
+      border: none;
+      background: #222;
+      color: #fff;
+      font-size: 1em;
+    }
+
+    button {
+      padding: 1em 1.5em;
+      background: #00d4ff;
+      color: #000;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #00aacc;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.8em;
+      padding: 0.8em;
+      background: #101010;
+      color: #888;
+      border-top: 1px solid #222;
+    }
+
+    @media (max-width: 600px) {
+      header {
+        font-size: 1.1em;
+      }
+      input, button {
+        font-size: 0.9em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>🤖 Jerry Mark 10 – Mixtral AI Chatbot</header>
+
+  <div id="chat"></div>
+
+  <form id="form">
+    <input id="input" placeholder="Type a message..." autocomplete="off" />
+    <button type="submit">Send</button>
+  </form>
+
+  <footer>
+    jeremyworld.org | jerrymarkten@jeremyworld.org | donate.jeremyworld.org | AI may give false or misleading information
+  </footer>
+
+  <script>
+    const API_URL = 'https://jerry-mark-10.YOUR_WORKER_SUBDOMAIN.workers.dev'; // ← Replace this with your actual Worker URL
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('input');
+    const form = document.getElementById('form');
+
+    let messages = [
+      { role: "system", content: "You are Jerry Mark 10, a smart, witty, helpful AI assistant created by jeremyworld.org." }
+    ];
+
+    function appendMessage(role, text) {
+      const div = document.createElement('div');
+      div.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
+      div.innerHTML = `<strong>${role === 'user' ? 'You' : 'Bot'}:</strong> ${text}`;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const content = input.value.trim();
+      if (!content) return;
+
+      appendMessage('user', content);
+      messages.push({ role: "user", content });
+      input.value = '';
+
+      appendMessage('bot', '...');
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "mixtral-8x7b-32768",
+            messages: messages,
+            temperature: 0.7,
+            max_tokens: 1024,
+            stream: false
+          })
+        });
+
+        const data = await res.json();
+        const reply = data.choices[0].message.content;
+        messages.push({ role: "assistant", content: reply });
+
+        document.querySelector('.bot:last-child').innerHTML = `<strong>Bot:</strong> ${reply}`;
+      } catch (err) {
+        document.querySelector('.bot:last-child').innerHTML = `<strong>Bot:</strong> ⚠️ Error`;
+        console.error(err);
+      }
+    };
+  </script>
+</body>
+</html>
