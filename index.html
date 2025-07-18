@@ -70,23 +70,19 @@
       border-bottom-left-radius: 0.3rem; /* Slightly different corner for visual appeal */
     }
 
-    /* ASCII Animation Container */
-    #bot-thinking-animation {
-      align-self: flex-start; /* Align with bot messages */
-      background: var(--bg-medium);
-      border-radius: 1.2rem;
-      padding: 0.9rem 1.2rem;
-      margin: 0.6rem 0;
-      max-width: 80%;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    /* Styling for the ASCII animation within a message bubble */
+    .message.bot.thinking { /* Apply these styles when a bot message is also 'thinking' */
       font-size: 0.8rem; /* Smaller font for ASCII art */
       line-height: 1; /* Tighten line height for ASCII art */
-      display: none; /* Hidden by default */
       white-space: pre; /* Preserve whitespace for ASCII art */
       font-family: 'Courier New', Courier, monospace; /* Monospace font crucial for ASCII */
       color: var(--text-medium); /* Softer color for the animation */
-      animation: fadeIn 0.3s ease-out;
+      min-height: 5em; /* Ensure enough height for the robot */
+      display: flex; /* Use flex to help center or align the content if needed */
+      align-items: center; /* Center vertically within the bubble */
+      justify-content: center; /* Center horizontally within the bubble */
     }
+
 
     form {
       display: flex;
@@ -207,66 +203,81 @@
     const form = document.getElementById('chat-form');
     const input = document.getElementById('user-input');
 
-    // ASCII Robot Dance Frames
+    // ASCII Robot Dance Frames with Disco Ball
     const robotFrames = [
       `
+      (.)
+     /|||\\
+    / | \\
+    ~ ~
    O
   /|\\
   / \\
 `,
       `
+     (*)
+    /|||\\
+   / | \\
+   ~ ~
    O
   \\|/
   / \\
 `,
       `
+      (.)
+     /|||\\
+    / | \\
+    ~ ~
    O
   /|\\
+  / \\
+`,
+      `
+     (*)
+    /|||\\
+   / | \\
+   ~ ~
+   O
+  \\|/
   / \\
 `
     ];
     let animationInterval;
     let frameIndex = 0;
+    let currentThinkingBubble = null; // To hold the reference to the thinking message bubble
 
-    // Function to add messages to the chat interface
-    function addMessage(text, role, placeholder = false) {
+    // Helper function to add messages to the chat interface
+    function addMessage(text, role, isThinking = false) {
       const div = document.createElement('div');
       div.className = `message ${role}`;
+      if (isThinking) {
+        div.classList.add('thinking'); // Add a class for thinking state styling
+      }
       div.innerHTML = text;
       chat.appendChild(div);
       chat.scrollTop = chat.scrollHeight; // Scroll to the newest message
       return div; // Return the element so its content can be updated/processed
     }
 
-    // Function to show the dancing robot
-    function showDancingRobot() {
-      // Create or get the animation container
-      let animationDiv = document.getElementById('bot-thinking-animation');
-      if (!animationDiv) {
-        animationDiv = document.createElement('div');
-        animationDiv.id = 'bot-thinking-animation';
-        chat.appendChild(animationDiv);
-      }
-      animationDiv.style.display = 'block'; // Show it
+    // Function to show the dancing robot in a message bubble
+    function showDancingRobotInBubble() {
+      // Create a new message bubble that will contain the animation
+      currentThinkingBubble = addMessage("", 'bot', true); // Pass true for isThinking
 
-      // Start animating
+      // Start animating within this new bubble
       animationInterval = setInterval(() => {
-        animationDiv.textContent = robotFrames[frameIndex];
+        currentThinkingBubble.textContent = robotFrames[frameIndex];
         frameIndex = (frameIndex + 1) % robotFrames.length;
         chat.scrollTop = chat.scrollHeight; // Keep scrolling to the bottom
       }, 300); // Change frame every 300ms
       chat.scrollTop = chat.scrollHeight; // Ensure it's visible immediately
-      return animationDiv; // Return it so we can easily hide it later
     }
 
-    // Function to hide the dancing robot
+    // Function to hide the dancing robot (by clearing the interval)
     function hideDancingRobot() {
       clearInterval(animationInterval); // Stop the animation
       frameIndex = 0; // Reset frame
-      const animationDiv = document.getElementById('bot-thinking-animation');
-      if (animationDiv) {
-        animationDiv.style.display = 'none'; // Hide it
-      }
+      // The currentThinkingBubble will be updated with the actual response, so no need to hide it
     }
 
     // Function to add the initial greeting message
@@ -286,8 +297,8 @@
       addMessage(message, 'user');
       input.value = '';
 
-      // Show the dancing robot while thinking
-      showDancingRobot();
+      // Show the dancing robot where the bot's response will be
+      showDancingRobotInBubble();
 
       try {
         // Your actual Cloudflare Worker URL
@@ -313,23 +324,34 @@
         const data = await res.json();
         const botResponseContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
 
-        // Hide the dancing robot before adding the actual response
+        // Hide the dancing robot (stop animation)
         hideDancingRobot();
 
-        // Add the bot's actual response
-        const botMessageEl = addMessage(botResponseContent, 'bot');
-
-        // After updating the content, tell MathJax to render the new math
-        if (typeof MathJax !== 'undefined') {
-          MathJax.typesetPromise([botMessageEl]).then(() => {
-            console.log('MathJax typesetting complete for new message.');
-          }).catch((err) => console.error('MathJax typesetting failed:', err));
+        // Update the content of the thinking bubble with the actual response
+        if (currentThinkingBubble) {
+            currentThinkingBubble.innerHTML = botResponseContent;
+            currentThinkingBubble.classList.remove('thinking'); // Remove thinking class
+            // After updating the content, tell MathJax to render the new math
+            if (typeof MathJax !== 'undefined') {
+              MathJax.typesetPromise([currentThinkingBubble]).then(() => {
+                console.log('MathJax typesetting complete for new message.');
+              }).catch((err) => console.error('MathJax typesetting failed:', err));
+            }
         }
+
 
       } catch (err) {
         // Hide robot even if there's an error
         hideDancingRobot();
-        addMessage(`[Error] ${err.message}`, 'bot');
+        if (currentThinkingBubble) {
+            currentThinkingBubble.innerHTML = `[Error] ${err.message}`;
+            currentThinkingBubble.classList.remove('thinking');
+        } else {
+             // Fallback if somehow currentThinkingBubble isn't set
+            addMessage(`[Error] ${err.message}`, 'bot');
+        }
+      } finally {
+        currentThinkingBubble = null; // Clear reference
       }
     });
   </script>
