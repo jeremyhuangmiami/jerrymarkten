@@ -8,11 +8,11 @@
     body {
       margin: 0;
       font-family: "Segoe UI", sans-serif;
-      background: #3a3a3a;
-      color: white;
+      background: #3a3a3a; /* Dark gray background */
+      color: white; /* White text for contrast */
       display: flex;
       flex-direction: column;
-      height: 100vh;
+      height: 100vh; /* Full viewport height */
     }
 
     header {
@@ -26,69 +26,96 @@
     }
 
     main {
-      flex: 1;
+      flex: 1; /* Takes up remaining vertical space */
       display: flex;
       flex-direction: column;
       padding: 1rem;
-      overflow-y: auto;
+      overflow-y: auto; /* Enables vertical scrolling for chat messages */
     }
 
     .message {
-      background: #4a4a4a;
-      border-radius: 1rem;
+      background: #4a4a4a; /* Slightly lighter dark gray for message bubbles */
+      border-radius: 1rem; /* Rounded corners for messages */
       padding: 0.75rem 1rem;
       margin: 0.5rem 0;
-      max-width: 75%;
+      max-width: 75%; /* Messages don't span full width */
     }
 
     .user {
-      align-self: flex-end;
-      background: #6a6a6a;
+      align-self: flex-end; /* Align user messages to the right */
+      background: #6a6a6a; /* Distinct color for user messages */
     }
 
     .bot {
-      align-self: flex-start;
+      align-self: flex-start; /* Align bot messages to the left */
     }
 
     form {
       display: flex;
       padding: 1rem;
-      border-top: 1px solid #444;
-      background: #3a3a3a;
+      border-top: 1px solid #444; /* Separator line above input */
+      background: #3a3a3a; /* Matches body background */
     }
 
     input[type="text"] {
-      flex: 1;
-      background: #3a3a3a;
-      border: 1px solid #555;
-      border-radius: 2rem;
+      flex: 1; /* Input field takes up most space */
+      background: #3a3a3a; /* Matches body background */
+      border: 1px solid #555; /* Subtle border */
+      border-radius: 2rem; /* Highly rounded input field */
       padding: 0.8rem 1rem;
       color: white;
       font-size: 1rem;
     }
 
     button {
-      background: white;
-      color: black;
+      background: white; /* White button */
+      color: black; /* Black text on button */
       border: none;
       margin-left: 0.5rem;
       padding: 0 1rem;
-      border-radius: 50%;
+      border-radius: 50%; /* Circular button */
       font-size: 1.2rem;
       cursor: pointer;
+      display: flex; /* Use flex to center arrow icon */
+      align-items: center;
+      justify-content: center;
+      min-width: 2.5rem; /* Ensure button is large enough for touch */
+      min-height: 2.5rem;
     }
 
     button:hover {
-      background: #ddd;
+      background: #ddd; /* Lighter on hover */
     }
 
     footer {
       text-align: center;
       font-size: 0.75rem;
-      color: #ccc;
+      color: #ccc; /* Light gray for footer text */
       padding-bottom: 1rem;
     }
+
+    /* Adjust MathJax rendering for dark theme if needed */
+    .MathJax {
+      color: white !important; /* Ensure MathJax output is white */
+    }
   </style>
+  <!-- MathJax Configuration -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']] // Define inline math delimiters
+      },
+      // Ensure MathJax processes new content added dynamically
+      startup: {
+        ready: () => {
+          console.log('MathJax is ready!');
+          MathJax.startup.defaultReady();
+        }
+      }
+    };
+  </script>
+  <!-- MathJax Library -->
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
 
@@ -119,15 +146,15 @@
       const message = input.value.trim();
       if (!message) return;
 
+      // Add user message
       addMessage(message, 'user');
       input.value = '';
 
-      addMessage("...", 'bot', true);
-      const botMessageEl = chat.lastChild;
+      // Add loading indicator for bot message
+      const botMessageEl = addMessage("...", 'bot', true); // Pass true for placeholder
 
       try {
-        // *** THIS IS THE CRITICAL CHANGE ***
-        // Replaced 'https://YOUR_WORKER_URL_HERE/' with your actual Worker URL
+        // Your actual Cloudflare Worker URL
         const workerUrl = 'https://jerrymarkten.jeremyhuangmiami.workers.dev/'; 
 
         const res = await fetch(workerUrl, {
@@ -143,25 +170,38 @@
           })
         });
 
-        // Improved error handling for responses from your Worker
         if (!res.ok) {
             const errorJson = await res.json().catch(() => ({ error: 'Unknown worker error or invalid JSON response.' }));
             throw new Error(errorJson.error || `HTTP error! Status: ${res.status}`);
         }
 
         const data = await res.json();
-        botMessageEl.textContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
+        const botResponseContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
+        
+        // Update the bot message element's content
+        botMessageEl.textContent = botResponseContent;
+
+        // After updating the content, tell MathJax to render the new math
+        // MathJax.typesetPromise() will process the entire document or a specific element
+        if (typeof MathJax !== 'undefined') {
+          MathJax.typesetPromise([botMessageEl]).then(() => {
+            console.log('MathJax typesetting complete for new message.');
+          }).catch((err) => console.error('MathJax typesetting failed:', err));
+        }
+
       } catch (err) {
         botMessageEl.textContent = `[Error] ${err.message}`;
       }
     });
 
+    // Helper function to add messages to the chat interface
     function addMessage(text, role, placeholder = false) {
       const div = document.createElement('div');
       div.className = `message ${role}`;
-      div.textContent = text;
+      div.textContent = text; // Use textContent initially to prevent XSS before MathJax processes
       chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
+      chat.scrollTop = chat.scrollHeight; // Scroll to the newest message
+      return div; // Return the element so its content can be updated/processed
     }
   </script>
 
