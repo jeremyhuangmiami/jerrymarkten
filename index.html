@@ -2,161 +2,158 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Jerry Mark 10 - Chatbot</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jerry Mark Ten</title>
   <style>
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #0e0e0e;
-      color: #ffffff;
+      font-family: "Segoe UI", sans-serif;
+      background: #3a3a3a;
+      color: white;
       display: flex;
       flex-direction: column;
       height: 100vh;
     }
 
     header {
-      background: #1c1c1c;
-      padding: 1em;
       text-align: center;
-      font-size: 1.4em;
-      font-weight: bold;
-      border-bottom: 1px solid #333;
+      padding: 2rem 1rem 1rem;
     }
 
-    #chat {
+    header h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+    }
+
+    main {
       flex: 1;
-      padding: 1em;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
       overflow-y: auto;
-      background: #121212;
     }
 
-    .msg {
-      margin-bottom: 1.5em;
-      line-height: 1.5;
-      white-space: pre-wrap;
+    .message {
+      background: #4a4a4a;
+      border-radius: 1rem;
+      padding: 0.75rem 1rem;
+      margin: 0.5rem 0;
+      max-width: 75%;
     }
 
     .user {
-      color: #00d4ff;
+      align-self: flex-end;
+      background: #6a6a6a;
     }
 
     .bot {
-      color: #d4ff00;
+      align-self: flex-start;
     }
 
     form {
       display: flex;
-      border-top: 1px solid #333;
-      background: #1a1a1a;
+      padding: 1rem;
+      border-top: 1px solid #444;
+      background: #3a3a3a;
     }
 
-    input {
+    input[type="text"] {
       flex: 1;
-      padding: 1em;
-      border: none;
-      background: #222;
-      color: #fff;
-      font-size: 1em;
+      background: #3a3a3a;
+      border: 1px solid #555;
+      border-radius: 2rem;
+      padding: 0.8rem 1rem;
+      color: white;
+      font-size: 1rem;
     }
 
     button {
-      padding: 1em 1.5em;
-      background: #00d4ff;
-      color: #000;
+      background: white;
+      color: black;
       border: none;
-      font-weight: bold;
+      margin-left: 0.5rem;
+      padding: 0 1rem;
+      border-radius: 50%;
+      font-size: 1.2rem;
       cursor: pointer;
     }
 
     button:hover {
-      background: #00aacc;
+      background: #ddd;
     }
 
     footer {
       text-align: center;
-      font-size: 0.8em;
-      padding: 0.8em;
-      background: #101010;
-      color: #888;
-      border-top: 1px solid #222;
-    }
-
-    @media (max-width: 600px) {
-      header {
-        font-size: 1.1em;
-      }
-      input, button {
-        font-size: 0.9em;
-      }
+      font-size: 0.75rem;
+      color: #ccc;
+      padding-bottom: 1rem;
     }
   </style>
 </head>
 <body>
-  <header>🤖 Jerry Mark 10 – Mixtral AI Chatbot</header>
 
-  <div id="chat"></div>
+  <header>
+    <h1>Hi, I'm Jerry.</h1>
+    <p>How can I help you today?</p>
+  </header>
 
-  <form id="form">
-    <input id="input" placeholder="Type a message..." autocomplete="off" />
-    <button type="submit">Send</button>
+  <main id="chat"></main>
+
+  <form id="chat-form">
+    <input type="text" id="user-input" placeholder="Type your message..." required />
+    <button type="submit">&#x27A4;</button>
   </form>
 
   <footer>
-    jeremyworld.org | jerrymarkten@jeremyworld.org | donate.jeremyworld.org | AI may give false or misleading information
+    jeremyworld.org | jerrymarkten@jeremyworld.org | donate.jeremyworld.org<br>
+    <span style="color:#888; font-style: italic;">AI for reference only</span>
   </footer>
 
   <script>
-    const API_URL = 'https://jerry-mark-10.YOUR_WORKER_SUBDOMAIN.workers.dev'; // ← Replace this with your actual Worker URL
     const chat = document.getElementById('chat');
-    const input = document.getElementById('input');
-    const form = document.getElementById('form');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('user-input');
 
-    let messages = [
-      { role: "system", content: "You are Jerry Mark 10, a smart, witty, helpful AI assistant created by jeremyworld.org." }
-    ];
-
-    function appendMessage(role, text) {
-      const div = document.createElement('div');
-      div.className = 'msg ' + (role === 'user' ? 'user' : 'bot');
-      div.innerHTML = `<strong>${role === 'user' ? 'You' : 'Bot'}:</strong> ${text}`;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    }
-
-    form.onsubmit = async (e) => {
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const content = input.value.trim();
-      if (!content) return;
+      const message = input.value.trim();
+      if (!message) return;
 
-      appendMessage('user', content);
-      messages.push({ role: "user", content });
+      addMessage(message, 'user');
       input.value = '';
 
-      appendMessage('bot', '...');
+      addMessage("...", 'bot', true);
+      const botMessageEl = chat.lastChild;
+
       try {
-        const res = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const res = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model: "mixtral-8x7b-32768",
-            messages: messages,
-            temperature: 0.7,
-            max_tokens: 1024,
-            stream: false
+            model: "gemma2-9b-it",
+            messages: [
+              { role: "system", content: "You are a helpful assistant." },
+              { role: "user", content: message }
+            ],
+            temperature: 0.7
           })
         });
 
         const data = await res.json();
-        const reply = data.choices[0].message.content;
-        messages.push({ role: "assistant", content: reply });
-
-        document.querySelector('.bot:last-child').innerHTML = `<strong>Bot:</strong> ${reply}`;
+        botMessageEl.textContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
       } catch (err) {
-        document.querySelector('.bot:last-child').innerHTML = `<strong>Bot:</strong> ⚠️ Error`;
-        console.error(err);
+        botMessageEl.textContent = `[Error] ${err.message}`;
       }
-    };
+    });
+
+    function addMessage(text, role, placeholder = false) {
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
   </script>
+
 </body>
 </html>
