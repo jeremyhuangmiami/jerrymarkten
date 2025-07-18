@@ -179,7 +179,9 @@
         const botResponseContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
         
         // Update the bot message element's content
-        botMessageEl.textContent = botResponseContent;
+        // IMPORTANT: Using innerHTML directly with AI-generated content can be a security risk (XSS).
+        // For production, consider sanitizing the content with a library like DOMPurify before setting innerHTML.
+        botMessageEl.innerHTML = botResponseContent;
 
         // After updating the content, tell MathJax to render the new math
         // MathJax.typesetPromise() will process the entire document or a specific element
@@ -190,7 +192,7 @@
         }
 
       } catch (err) {
-        botMessageEl.textContent = `[Error] ${err.message}`;
+        botMessageEl.innerHTML = `[Error] ${err.message}`; // Use innerHTML for error messages too
       }
     });
 
@@ -198,7 +200,8 @@
     function addMessage(text, role, placeholder = false) {
       const div = document.createElement('div');
       div.className = `message ${role}`;
-      div.textContent = text; // Use textContent initially to prevent XSS before MathJax processes
+      // Changed to innerHTML to allow HTML tags (like <b>) and MathJax rendering
+      div.innerHTML = text; 
       chat.appendChild(div);
       chat.scrollTop = chat.scrollHeight; // Scroll to the newest message
       return div; // Return the element so its content can be updated/processed
