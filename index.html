@@ -73,24 +73,39 @@
       border-bottom-left-radius: 0.3rem; /* Slightly different corner for visual appeal */
     }
 
-    /* Styling for the loading indicator within a message bubble */
+    /* Styling for the entire thinking message bubble container */
     .message.bot.thinking {
-      background: var(--bg-medium); /* Standard bot bubble background */
-      padding: 0.9rem 1.2rem; /* Standard padding */
-      min-height: 50px; /* Ensure enough height for content */
-      color: var(--text-medium); /* Softer text color */
-      font-size: 0.9em;
       display: flex;
-      flex-direction: column; /* Stack text and bar */
-      align-items: flex-start; /* Align text to left */
-      justify-content: center;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Keep standard shadow */
-      border-bottom-left-radius: 0.3rem; /* Match bot bubble style */
+      flex-direction: column; /* Stack GIF and loading info vertically */
+      align-items: flex-start; /* Align content to the left inside the bubble */
+      justify-content: flex-start;
+      /* Inherits standard bubble padding, background, border-radius, box-shadow from .message.bot */
+    }
+
+    /* Styles for the GIF itself within the thinking bubble */
+    .thinking-gif {
+      width: 120px; /* Adjust size as needed */
+      height: 120px; /* Maintain aspect ratio */
+      border-radius: 1.0rem; /* Rounded corners for the GIF */
+      object-fit: cover; /* Ensures the GIF covers the area without distortion */
+      display: block; /* Remove extra space below image */
+      margin-bottom: 0.8rem; /* Space below the GIF, separating it from the text */
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Optional: slight shadow on GIF */
+    }
+
+    /* Container for loading text and bar */
+    .loading-info {
+      width: 100%; /* Make it span the width of its parent bubble padding */
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
     }
 
     .loading-text {
       margin-bottom: 0.5rem; /* Space between text and bar */
       font-weight: 500; /* Slightly bolder text */
+      color: var(--text-medium); /* Softer text color */
+      font-size: 0.85em; /* Slightly smaller text for info */
     }
 
     .loading-bar-container {
@@ -233,13 +248,16 @@
     const form = document.getElementById('chat-form');
     const input = document.getElementById('user-input');
 
+    // GIF URL for the thinking animation
+    const thinkingGifUrl = 'https://i.giphy.com/koxVXnnmaQwllyovVG.webp';
     let currentThinkingBubble = null; // To hold the reference to the thinking message bubble
 
     // Define the delay here (in milliseconds) before the AI request is sent
-    // Adjust this value to control how long the loading bar animates.
+    // Adjust this value to control how long the GIF plays and the loading bar animates.
     const delayMilliseconds = 1500; // Example: 1.5 seconds
 
     // Set the CSS variable for animation duration to match the JS delay
+    // This allows the CSS animation to automatically complete at the end of the delay.
     document.documentElement.style.setProperty('--loading-duration', `${delayMilliseconds / 1000}s`);
 
     // Helper function to add messages to the chat interface
@@ -255,12 +273,15 @@
       return div; // Return the element so its content can be updated/processed
     }
 
-    // Function to show the loading bar and text in a message bubble
-    function showLoadingIndicator() {
+    // Function to show the GIF, loading text, and bar in a message bubble
+    function showLoadingIndicatorWithGif() {
       const loadingHtml = `
-        <div class="loading-text">Gathering information from Jeremy's brain...</div>
-        <div class="loading-bar-container">
-          <div class="loading-bar"></div>
+        <img src="${thinkingGifUrl}" alt="Bot thinking..." class="thinking-gif" />
+        <div class="loading-info">
+          <div class="loading-text">Gathering information from Jeremy's brain...</div>
+          <div class="loading-bar-container">
+            <div class="loading-bar"></div>
+          </div>
         </div>
       `;
       currentThinkingBubble = addMessage(loadingHtml, 'bot', true);
@@ -285,8 +306,8 @@
       addMessage(message, 'user');
       input.value = ''; // Clear the input field
 
-      // Show the loading indicator where the bot's response will appear
-      showLoadingIndicator();
+      // Show the GIF and loading indicator where the bot's response will appear
+      showLoadingIndicatorWithGif();
 
       // Introduce a delay before making the actual API call to Cloudflare Worker
       setTimeout(async () => {
