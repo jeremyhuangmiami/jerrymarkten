@@ -126,7 +126,7 @@
       const botMessageEl = chat.lastChild;
 
       try {
-        const res = await fetch('/api/chat', {
+        const res = await fetch('https://YOUR_WORKER_URL_HERE/', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
