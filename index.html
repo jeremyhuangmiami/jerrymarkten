@@ -21,6 +21,9 @@
       /* Message Bubble Colors */
       --message-user-bg: var(--accent-blue); /* Teal-blue for user messages */
       --message-bot-bg: var(--bg-medium); /* Consistent with medium background */
+
+      /* Variable for loading bar animation duration (set by JS) */
+      --loading-duration: 1.5s; /* Default, will be overridden by JS */
     }
 
     body {
@@ -70,26 +73,45 @@
       border-bottom-left-radius: 0.3rem; /* Slightly different corner for visual appeal */
     }
 
-    /* Styling for the GIF animation within a message bubble */
+    /* Styling for the loading indicator within a message bubble */
     .message.bot.thinking {
-      background: none; /* Make background transparent to show GIF fully if it has its own bg */
-      padding: 0; /* Remove padding as GIF provides its own visual space */
-      box-shadow: none; /* Remove box-shadow so GIF isn't constrained */
-      overflow: hidden; /* Ensure GIF corners are rounded */
-      width: 150px; /* Set a fixed width for the GIF bubble */
-      height: 150px; /* Set a fixed height for the GIF bubble (adjust as needed) */
-      display: flex; /* Use flex to center the GIF */
-      align-items: center;
+      background: var(--bg-medium); /* Standard bot bubble background */
+      padding: 0.9rem 1.2rem; /* Standard padding */
+      min-height: 50px; /* Ensure enough height for content */
+      color: var(--text-medium); /* Softer text color */
+      font-size: 0.9em;
+      display: flex;
+      flex-direction: column; /* Stack text and bar */
+      align-items: flex-start; /* Align text to left */
       justify-content: center;
-      border-radius: 1.2rem; /* Apply round corners to the container itself */
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Keep standard shadow */
+      border-bottom-left-radius: 0.3rem; /* Match bot bubble style */
     }
 
-    .message.bot.thinking img {
-      max-width: 100%;
-      max-height: 100%;
-      display: block; /* Remove extra space below image */
-      border-radius: 1.2rem; /* Apply round corners directly to the image */
-      object-fit: cover; /* Ensures the image covers the area without distortion */
+    .loading-text {
+      margin-bottom: 0.5rem; /* Space between text and bar */
+      font-weight: 500; /* Slightly bolder text */
+    }
+
+    .loading-bar-container {
+      width: 100%;
+      height: 8px; /* Height of the bar */
+      background: var(--bg-light); /* Background of the bar track */
+      border-radius: 4px; /* Rounded corners for the bar container */
+      overflow: hidden; /* Ensures the inner bar respects corners */
+    }
+
+    .loading-bar {
+      height: 100%;
+      width: 0%; /* Starts at 0% */
+      background: var(--accent-blue); /* Color of the loading progress */
+      border-radius: 4px; /* Rounded corners for the bar itself */
+      animation: loadingProgress var(--loading-duration) linear forwards; /* Controlled by JS variable */
+    }
+
+    @keyframes loadingProgress {
+      from { width: 0%; }
+      to { width: 100%; }
     }
 
     form {
@@ -211,13 +233,14 @@
     const form = document.getElementById('chat-form');
     const input = document.getElementById('user-input');
 
-    // GIF URL for the thinking animation
-    const thinkingGifUrl = 'https://i.giphy.com/koxVXnnmaQwllyovVG.webp';
     let currentThinkingBubble = null; // To hold the reference to the thinking message bubble
 
     // Define the delay here (in milliseconds) before the AI request is sent
-    // Adjust this value to make the GIF play longer or shorter.
+    // Adjust this value to control how long the loading bar animates.
     const delayMilliseconds = 1500; // Example: 1.5 seconds
+
+    // Set the CSS variable for animation duration to match the JS delay
+    document.documentElement.style.setProperty('--loading-duration', `${delayMilliseconds / 1000}s`);
 
     // Helper function to add messages to the chat interface
     function addMessage(content, role, isThinking = false) {
@@ -232,18 +255,16 @@
       return div; // Return the element so its content can be updated/processed
     }
 
-    // Function to show the GIF in a message bubble
-    function showThinkingGifInBubble() {
-      // Create a new message bubble that will contain the GIF
-      currentThinkingBubble = addMessage(`<img src="${thinkingGifUrl}" alt="Bot thinking..." />`, 'bot', true);
+    // Function to show the loading bar and text in a message bubble
+    function showLoadingIndicator() {
+      const loadingHtml = `
+        <div class="loading-text">Gathering information from Jeremy's brain...</div>
+        <div class="loading-bar-container">
+          <div class="loading-bar"></div>
+        </div>
+      `;
+      currentThinkingBubble = addMessage(loadingHtml, 'bot', true);
       chat.scrollTop = chat.scrollHeight; // Ensure it's visible immediately
-    }
-
-    // Function to hide the GIF (by clearing the content of the bubble)
-    // This function doesn't actually hide the bubble, but prepares it for new content.
-    function hideThinkingGif() {
-      // The currentThinkingBubble's content will be overwritten by the actual response,
-      // so no explicit hiding or clearing is needed here.
     }
 
     // Function to add the initial greeting message when the page loads
@@ -264,8 +285,8 @@
       addMessage(message, 'user');
       input.value = ''; // Clear the input field
 
-      // Show the GIF where the bot's response will appear
-      showThinkingGifInBubble();
+      // Show the loading indicator where the bot's response will appear
+      showLoadingIndicator();
 
       // Introduce a delay before making the actual API call to Cloudflare Worker
       setTimeout(async () => {
@@ -293,10 +314,6 @@
           const data = await res.json();
           const botResponseContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
 
-          // Hide the GIF (this simply stops any continuous animation if applicable,
-          // the content replacement is what visually 'hides' it)
-          hideThinkingGif();
-
           // Update the content of the thinking bubble with the actual AI response
           if (currentThinkingBubble) {
               currentThinkingBubble.innerHTML = botResponseContent;
@@ -311,7 +328,6 @@
 
         } catch (err) {
           // Handle errors during the fetch operation
-          hideThinkingGif(); // Hide GIF even if an error occurs
           if (currentThinkingBubble) {
               currentThinkingBubble.innerHTML = `[Error] ${err.message}`;
               currentThinkingBubble.classList.remove('thinking');
