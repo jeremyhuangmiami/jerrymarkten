@@ -226,6 +226,28 @@
         font-size: 1.1em;
         color: var(--text-medium);
     }
+    /* Styling for the new Login/Register button */
+    #go-to-login-button {
+        background-color: var(--accent-blue);
+        color: white;
+        padding: 12px 25px; /* Increased padding */
+        border: none;
+        border-radius: 8px; /* Rounded corners */
+        cursor: pointer;
+        font-size: 1.1em;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Soft shadow */
+    }
+    #go-to-login-button:hover {
+        background-color: var(--accent-blue-dark);
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+    }
+    #go-to-login-button:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
     #logout-button-container {
         margin-top: 20px;
         position: fixed; /* Fixed position */
@@ -252,6 +274,24 @@
     .hidden {
         display: none !important;
     }
+    /* New style for temporary status messages */
+    #status-message {
+        position: fixed;
+        bottom: 20px; /* Position at the bottom */
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #dc3545; /* Red for error */
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 1001; /* Above everything */
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+    #status-message.show {
+        opacity: 1;
+    }
   </style>
   <script>
     MathJax = {
@@ -275,10 +315,9 @@
     </div>
 
     <div id="login-prompt-container" class="hidden">
-        <h1>Access Denied</h1>
-        <p>You must be logged in to chat with Jerry.</p>
-        <p>Please log in through our main authentication hub:</p>
-        <button id="go-to-login-button">Go to Login Page</button>
+        <h1>Access Required</h1>
+        <p>Please log in or register first before chatting with Jerry Mark Ten.</p>
+        <button id="go-to-login-button">Login/Register</button>
     </div>
 
     <div id="chat-interface-wrapper" class="hidden" style="display: flex; flex-direction: column; flex: 1; height: 100vh;">
@@ -300,6 +339,7 @@
         </footer>
     </div>
 
+    <div id="status-message" class="hidden"></div>
 
   <script>
     // --- YOUR FIREBASE CONFIGURATION ---
@@ -324,6 +364,7 @@
     const loggedInUserInfo = document.getElementById('logged-in-user-info');
     const logoutButtonProject = document.getElementById('logout-button-project');
     const goToLoginButton = document.getElementById('go-to-login-button');
+    const statusMessageDiv = document.getElementById('status-message'); // Get the new status message div
 
     const chat = document.getElementById('chat');
     const form = document.getElementById('chat-form');
@@ -369,6 +410,21 @@
     function addInitialGreeting() {
       addMessage("Hi, I'm Jerry. How can I help?", 'bot');
     }
+
+    // New function to display temporary status messages
+    function displayStatusMessage(message, duration = 3000) {
+        statusMessageDiv.textContent = message;
+        statusMessageDiv.classList.remove('hidden');
+        statusMessageDiv.classList.add('show');
+
+        setTimeout(() => {
+            statusMessageDiv.classList.remove('show');
+            setTimeout(() => {
+                statusMessageDiv.classList.add('hidden');
+            }, 300); // Allow transition to finish before hiding
+        }, duration);
+    }
+
 
     // --- Firebase Authentication Check ---
     auth.onAuthStateChanged(function(user) {
@@ -455,6 +511,8 @@
                // Fallback if currentThinkingBubble was not set for some reason
               addMessage(`[Error] ${err.message}`, 'bot');
           }
+           // Use the new displayStatusMessage for fetch errors
+          displayStatusMessage(`AI Error: ${err.message}`, 5000); // Show for 5 seconds
         } finally {
           currentThinkingBubble = null; // Clear the reference to the thinking bubble
           chat.scrollTop = chat.scrollHeight; // Ensure scroll after thinking done
@@ -477,7 +535,8 @@
             // onAuthStateChanged will handle hiding the chat and showing login prompt
         }).catch(function(error) {
             console.error('Error signing out:', error);
-            alert('Error signing out: ' + error.message);
+            // Use the new displayStatusMessage for logout errors
+            displayStatusMessage(`Sign Out Error: ${error.message}`, 5000); // Show for 5 seconds
         });
     });
   </script>
