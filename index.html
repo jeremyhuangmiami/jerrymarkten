@@ -3,345 +3,142 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Jerry Mark Ten</title>
+  <title>JeremyWorld Login Hub</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/ui/6.0.0/firebase-ui-auth.js"></script>
+  <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.0.0/firebase-ui-auth.css" />
   <style>
     :root {
-      /* Softer Dark Mode Palette */
-      --bg-dark: #202020; /* Darker charcoal */
-      --bg-medium: #303030; /* Lighter charcoal for elements */
-      --bg-light: #404040; /* Even lighter for borders/dividers */
-      --text-light: #f0f0f0; /* Near white for main text */
-      --text-medium: #b0b0b0; /* Softer gray for secondary text */
-      /* Accent Color: Teal-Blue */
+      --bg-dark: #202020;
+      --bg-medium: #303030;
+      --text-light: #f0f0f0;
+      --text-medium: #b0b0b0;
       --accent-blue: #008CBA;
       --accent-blue-dark: #007095;
-      /* Message Bubble Colors */
-      --message-user-bg: var(--accent-blue); /* Teal-blue for user messages */
-      --message-bot-bg: var(--bg-medium); /* Consistent with medium background */
-      /* Variable for loading bar animation duration (set by JS) */
-      --loading-duration: 1.5s; /* Default, will be overridden by JS */
     }
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
-      background: var(--bg-dark);
+      background-color: var(--bg-dark);
       color: var(--text-light);
       display: flex;
       flex-direction: column;
-      height: 100vh;
-      overflow: hidden; /* Prevent body scroll, main handles chat scroll */
-    }
-    main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 1rem;
-      overflow-y: auto; /* Enables vertical scrolling for chat messages */
-      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-      padding-bottom: 1.5rem; /* Add space for input field not to overlap last message */
-    }
-    .message {
-      background: var(--message-bot-bg);
-      border-radius: 1.2rem; /* Softer rounded corners */
-      padding: 0.9rem 1.2rem;
-      margin: 0.6rem 0;
-      max-width: 80%; /* Slightly wider messages */
-      word-wrap: break-word; /* Ensure long words break */
-      line-height: 1.5;
-      font-size: 0.95rem;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Softer shadow */
-      animation: fadeIn 0.3s ease-out; /* Fade in animation */
-    }
-    .user {
-      align-self: flex-end;
-      background: var(--message-user-bg);
-      color: white; /* White text on blue */
-      border-bottom-right-radius: 0.3rem; /* Slightly different corner for visual appeal */
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* More pronounced shadow for user */
-    }
-    .bot {
-      align-self: flex-start;
-      border-bottom-left-radius: 0.3rem; /* Slightly different corner for visual appeal */
-    }
-    /* Styling for the entire thinking message bubble container */
-    .message.bot.thinking {
-      display: flex;
-      flex-direction: column; /* Stack GIF and loading info vertically */
-      align-items: flex-start; /* Align content to the left inside the bubble */
-      justify-content: flex-start;
-      /* Inherits standard bubble padding, background, border-radius, box-shadow from .message.bot */
-    }
-    /* Styles for the GIF itself within the thinking bubble */
-    .thinking-gif {
-      width: 120px; /* Adjust size as needed */
-      height: 120px; /* Maintain aspect ratio */
-      border-radius: 1.0rem; /* Rounded corners for the GIF */
-      object-fit: cover; /* Ensures the GIF covers the area without distortion */
-      display: block; /* Remove extra space below image */
-      margin-bottom: 0.8rem; /* Space below the GIF, separating it from the text */
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Optional: slight shadow on GIF */
-    }
-    /* Container for loading text and bar */
-    .loading-info {
-      width: 100%; /* Make it span the width of its parent bubble padding */
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-    }
-    .loading-text {
-      margin-bottom: 0.5rem; /* Space between text and bar */
-      font-weight: 500; /* Slightly bolder text */
-      color: var(--text-medium); /* Softer text color */
-      font-size: 0.85em; /* Slightly smaller text for info */
-    }
-    .loading-bar-container {
-      width: 100%;
-      height: 8px; /* Height of the bar */
-      background: var(--bg-light); /* Background of the bar track */
-      border-radius: 4px; /* Rounded corners for the bar container */
-      overflow: hidden; /* Ensures the inner bar respects corners */
-    }
-    .loading-bar {
-      height: 100%;
-      width: 0%; /* Starts at 0% */
-      background: var(--accent-blue); /* Color of the loading progress */
-      border-radius: 4px; /* Rounded corners for the bar itself */
-      animation: loadingProgress var(--loading-duration) linear forwards; /* Controlled by JS variable */
-    }
-    @keyframes loadingProgress {
-      from { width: 0%; }
-      to { width: 100%; }
-    }
-    form {
-      display: flex;
-      padding: 1rem;
-      border-top: 1px solid var(--bg-light); /* Subtle separator */
-      background: var(--bg-dark);
-      align-items: center; /* Vertically align items in the form */
-    }
-    input[type="text"] {
-      flex: 1;
-      background: var(--bg-medium);
-      border: none; /* No border for a cleaner look */
-      border-radius: 2.5rem; /* More rounded */
-      padding: 1rem 1.2rem; /* Increased padding for better touch area */
-      color: var(--text-light);
-      font-size: 1rem;
-      outline: none; /* Remove outline on focus */
-      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); /* Inner shadow for depth */
-      transition: background 0.2s ease, box-shadow 0.2s ease;
-    }
-    input[type="text"]::placeholder {
-      color: var(--text-medium);
-      opacity: 0.7;
-    }
-    input[type="text"]:focus {
-      background: var(--bg-light);
-      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 2px var(--accent-blue); /* Focus ring */
-    }
-    button {
-      background: var(--accent-blue);
-      color: white;
-      border: none;
-      margin-left: 0.75rem; /* Increased margin */
-      padding: 0;
-      border-radius: 50%;
-      font-size: 1.4rem; /* Larger icon */
-      cursor: pointer;
-      display: flex;
       align-items: center;
       justify-content: center;
-      min-width: 3rem; /* Larger button for better touch */
-      min-height: 3rem;
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* More pronounced shadow */
-      transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+      min-height: 100vh;
+      padding: 1rem;
+      box-sizing: border-box;
     }
-    button:hover {
-      background: var(--accent-blue-dark);
-      transform: translateY(-2px); /* Slightly more lift on hover */
-      box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4);
-    }
-    button:active {
-      transform: translateY(0);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-    }
-    footer {
+    .container {
+      background-color: var(--bg-medium);
+      padding: 2.5rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
       text-align: center;
-      font-size: 0.7rem;
+      max-width: 450px;
+      width: 100%;
+    }
+    h1 {
+      color: var(--accent-blue);
+      margin-bottom: 1.5rem;
+      font-size: 2.2rem;
+    }
+    p {
       color: var(--text-medium);
-      padding: 1rem 1rem 0.8rem;
-      background: var(--bg-dark);
-      border-top: 1px solid var(--bg-light); /* Consistent separator */
+      font-size: 1.1rem;
+      line-height: 1.6;
+      margin-bottom: 2rem;
     }
-    footer span {
-      color: #888;
-      font-style: italic;
+    #firebaseui-auth-container {
+      margin-top: 2rem;
+      margin-bottom: 1.5rem;
+      /* FirebaseUI default styles will apply here */
     }
-    /* Adjust MathJax rendering for dark theme */
-    .MathJax {
-      color: var(--text-light) !important;
+    #loader {
+      text-align: center;
+      margin-top: 2rem;
+      color: var(--text-medium);
     }
-    /* Animations */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    /* --- NEW AUTH-SPECIFIC STYLES --- */
-    #loading-auth-status, #login-prompt-container, #logout-button-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        padding: 2rem;
-        background-color: var(--bg-medium);
+    .sign-out-info {
+        margin-top: 1.5rem;
+        padding: 1rem;
+        background-color: var(--bg-dark);
         border-radius: 8px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        max-width: 500px;
-        margin: auto; /* Center the box */
-        min-height: 200px; /* Ensure some height */
-    }
-    #loading-auth-status {
-        height: 100vh; /* Takes full screen height while loading */
-        margin: 0; /* Remove default margin */
-        padding: 0; /* Remove default padding */
-        position: fixed; /* Fix to viewport */
-        top: 0;
-        left: 0;
+        color: var(--text-light);
+        display: none; /* Hidden by default */
+        text-align: left;
         width: 100%;
-        background: var(--bg-dark); /* Full screen background */
-        z-index: 1000; /* On top of everything */
+        box-sizing: border-box;
+        border: 1px solid var(--bg-light);
     }
-    #login-prompt-container h1 {
-        color: var(--accent-blue);
-        margin-bottom: 1rem;
-    }
-    #login-prompt-container p {
-        margin-bottom: 1.5rem;
-        font-size: 1.1em;
+    .sign-out-info p {
+        margin-bottom: 0.5rem;
+        font-size: 0.95rem;
         color: var(--text-medium);
     }
-    /* Styling for the new Login/Register button */
-    #go-to-login-button {
+    .sign-out-info strong {
+        color: var(--text-light);
+    }
+    .sign-out-button {
+        background-color: #dc3545; /* Red for sign out */
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.2s ease, transform 0.2s ease;
+        margin-top: 1rem;
+    }
+    .sign-out-button:hover {
+        background-color: #c82333;
+        transform: translateY(-2px);
+    }
+    .sign-out-button:active {
+        transform: translateY(0);
+    }
+    .back-button {
         background-color: var(--accent-blue);
         color: white;
-        padding: 12px 25px; /* Increased padding */
         border: none;
-        border-radius: 8px; /* Rounded corners */
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
         cursor: pointer;
-        font-size: 1.1em;
+        font-size: 1rem;
         transition: background-color 0.2s ease, transform 0.2s ease;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2); /* Soft shadow */
+        margin-top: 1rem;
+        margin-left: 10px; /* Space between buttons */
     }
-    #go-to-login-button:hover {
+    .back-button:hover {
         background-color: var(--accent-blue-dark);
         transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0,0,0,0.3);
     }
-    #go-to-login-button:active {
+    .back-button:active {
         transform: translateY(0);
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
-
-    #logout-button-container {
-        margin-top: 20px;
-        position: fixed; /* Fixed position */
-        top: 10px;
-        right: 10px;
-        padding: 0.5rem 1rem;
-        background: var(--bg-medium);
-        border-radius: 8px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        z-index: 500; /* Above chat but below auth loading */
-        flex-direction: row; /* For horizontal display of user info and button */
-        gap: 10px;
-        font-size: 0.9em;
-    }
-    #logout-button-container #logged-in-user-info {
-        color: var(--text-medium);
-    }
-    #logout-button-container button {
-        background: #dc3545; /* Red for logout */
-    }
-    #logout-button-container button:hover {
-        background: #c82333;
-    }
-    .hidden {
-        display: none !important;
-    }
-    /* New style for temporary status messages */
-    #status-message {
-        position: fixed;
-        bottom: 20px; /* Position at the bottom */
-        left: 50%;
-        transform: translateX(-50%);
-        background-color: #dc3545; /* Red for error */
-        color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        z-index: 1001; /* Above everything */
-        opacity: 0;
-        transition: opacity 0.3s ease-in-out;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-    }
-    #status-message.show {
-        opacity: 1;
     }
   </style>
-  <script>
-    MathJax = {
-      tex: {
-        inlineMath: [['$', '$'], ['\\(', '\\)']] // Define inline math delimiters
-      },
-      // Ensure MathJax processes new content added dynamically
-      startup: {
-        ready: () => {
-          console.log('MathJax is ready!');
-          MathJax.startup.defaultReady();
-        }
-      }
-    };
-  </script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    <div id="loading-auth-status">
-        <p>Checking login status...</p>
+  <div class="container">
+    <h1>JeremyWorld Login Hub</h1>
+    <p>Sign in or create an account to access JeremyWorld apps like Jerry Mark Ten.</p>
+
+    <div id="firebaseui-auth-container"></div>
+    <div id="loader">Loading authentication UI...</div>
+
+    <div id="sign-out-info" class="sign-out-info">
+        <p>You are currently signed in as: <strong id="user-email-display"></strong></p>
+        <button id="sign-out-button" class="sign-out-button">Sign Out</button>
+        <button id="back-to-site-button" class="back-button" style="display:none;">Back to Your Site</button>
     </div>
-
-    <div id="login-prompt-container" class="hidden">
-        <h1>Access Required</h1>
-        <p>Please log in or register first before chatting with Jerry Mark Ten.</p>
-        <button id="go-to-login-button">Login/Register</button>
-    </div>
-
-    <div id="chat-interface-wrapper" class="hidden" style="display: flex; flex-direction: column; flex: 1; height: 100vh;">
-        <div id="logout-button-container">
-            <span id="logged-in-user-info"></span>
-            <button id="logout-button-project">Sign Out</button>
-        </div>
-
-        <main id="chat"></main>
-
-        <form id="chat-form">
-            <input type="text" id="user-input" placeholder="Type your message..." required />
-            <button type="submit">&#x27A4;</button>
-        </form>
-
-        <footer>
-            jeremyworld.org | jerrymarkten@jeremyworld.org | donate.jeremyworld.org<br>
-            <span>AI for reference only</span>
-        </footer>
-    </div>
-
-    <div id="status-message" class="hidden"></div>
+  </div>
 
   <script>
+    // --- Test Log to confirm script execution ---
+    console.log("LOGIN PAGE SCRIPT IS RUNNING!"); 
+
     // --- YOUR FIREBASE CONFIGURATION ---
     const firebaseConfig = {
         apiKey: "AIzaSyCyPk7d26WwhHM34MVbSHBMrnfSTtT213Y",
@@ -351,206 +148,103 @@
         messagingSenderId: "830728575641",
         appId: "1:830728575641:web:3d22b3b15127f0ae93f608"
     };
-    // --- END OF YOUR FIREBASE CONFIGURATION ---
+    // --- END OF FIREBASE CONFIGURATION ---
 
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
-    // Set authentication persistence to LOCAL (user stays logged in)
-    // This is crucial for cross-subdomain sessions with `authDomain` configured correctly.
-    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-      .then(() => {
-        console.log("Firebase Auth persistence set to LOCAL.");
-        // Now that persistence is set, observe auth state
-        auth.onAuthStateChanged(function(user) {
-            loadingAuthStatus.classList.add('hidden'); // Hide loading overlay
+    // DOM elements for signed-in state
+    const signOutInfoDiv = document.getElementById('sign-out-info');
+    const userEmailDisplay = document.getElementById('user-email-display');
+    const signOutButton = document.getElementById('sign-out-button');
+    const backToSiteButton = document.getElementById('back-to-site-button');
+    const firebaseUiContainer = document.getElementById('firebaseui-auth-container');
+    const loader = document.getElementById('loader');
 
-            if (user) {
-                // User is signed in. Show chat interface.
-                chatInterfaceWrapper.classList.remove('hidden');
-                loginPromptContainer.classList.add('hidden');
-                loggedInUserInfo.textContent = `Logged in as: ${user.email || user.displayName}`;
-                console.log("User is logged in:", user.uid, user.email);
-
-                // Add initial greeting only once after successful login
-                if (chat.children.length === 0) { // Only add if chat is empty
-                    addInitialGreeting();
-                }
-
-            } else {
-                // User is signed out or no session found. Show login prompt.
-                chatInterfaceWrapper.classList.add('hidden');
-                loginPromptContainer.classList.remove('hidden');
-                console.log("User is not logged in.");
-            }
-        });
-      })
-      .catch((error) => {
-        // Handle errors here, e.g., if persistence is not supported in the browser
-        console.error("Error setting persistence:", error);
-        displayStatusMessage(`Auth Error: ${error.message}`, 5000); // Show error to user
-        // Still try to check auth state even if persistence failed, though it might not persist correctly
-        auth.onAuthStateChanged(function(user) { /* ... same logic as above ... */ });
-      });
-
-
-    // DOM elements
-    const loadingAuthStatus = document.getElementById('loading-auth-status');
-    const loginPromptContainer = document.getElementById('login-prompt-container');
-    const chatInterfaceWrapper = document.getElementById('chat-interface-wrapper');
-    const loggedInUserInfo = document.getElementById('logged-in-user-info');
-    const logoutButtonProject = document.getElementById('logout-button-project');
-    const goToLoginButton = document.getElementById('go-to-login-button');
-    const statusMessageDiv = document.getElementById('status-message'); // Get the new status message div
-
-    const chat = document.getElementById('chat');
-    const form = document.getElementById('chat-form');
-    const input = document.getElementById('user-input');
-
-    // GIF URL for the thinking animation
-    const thinkingGifUrl = 'https://i.giphy.com/koxVXnnmaQwllyovVG.webp';
-    let currentThinkingBubble = null; // To hold the reference to the thinking message bubble
-
-    // Define the delay here (in milliseconds) before the AI request is sent
-    const delayMilliseconds = 1500; // Example: 1.5 seconds
-    document.documentElement.style.setProperty('--loading-duration', `${delayMilliseconds / 1000}s`);
-
-    // Helper function to add messages to the chat interface
-    function addMessage(content, role, isThinking = false) {
-      const div = document.createElement('div');
-      div.className = `message ${role}`;
-      if (isThinking) {
-        div.classList.add('thinking'); // Add a class for thinking state styling
-      }
-      div.innerHTML = content; // Set content directly
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight; // Scroll to the newest message
-      return div; // Return the element so its content can be updated/processed
-    }
-
-    // Function to show the GIF, loading text, and bar in a message bubble
-    function showLoadingIndicatorWithGif() {
-      const loadingHtml = `
-        <img src="${thinkingGifUrl}" alt="Bot thinking..." class="thinking-gif" />
-        <div class="loading-info">
-          <div class="loading-text">Gathering information from Jeremy's brain...</div>
-          <div class="loading-bar-container">
-            <div class="loading-bar"></div>
-          </div>
-        </div>
-      `;
-      currentThinkingBubble = addMessage(loadingHtml, 'bot', true);
-      chat.scrollTop = chat.scrollHeight; // Ensure it's visible immediately
-    }
-
-    // Function to add the initial greeting message when the page loads (only if logged in)
-    function addInitialGreeting() {
-      addMessage("Hi, I'm Jerry. How can I help?", 'bot');
-    }
-
-    // New function to display temporary status messages
-    function displayStatusMessage(message, duration = 3000) {
-        statusMessageDiv.textContent = message;
-        statusMessageDiv.classList.remove('hidden');
-        statusMessageDiv.classList.add('show');
-
-        setTimeout(() => {
-            statusMessageDiv.classList.remove('show');
-            setTimeout(() => {
-                statusMessageDiv.classList.add('hidden');
-            }, 300); // Allow transition to finish before hiding
-        }, duration);
-    }
-
-
-    // Event listener for the chat form submission (only active when chat interface is shown)
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault(); // Prevent default form submission and page reload
-      const message = input.value.trim();
-      if (!message) return; // Do nothing if the input is empty
-
-      // Add user message to the chat
-      addMessage(message, 'user');
-      input.value = ''; // Clear the input field
-
-      // Show the GIF and loading indicator where the bot's response will appear
-      showLoadingIndicatorWithGif();
-
-      // Introduce a delay before making the actual API call to Cloudflare Worker
-      setTimeout(async () => {
-        try {
-          // Your actual Cloudflare Worker URL
-          const workerUrl = 'https://jerrymarkten.jeremyhuangmiami.workers.dev/';
-          const res = await fetch(workerUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              model: "gemma2-9b-it",
-              messages: [
-                { role: "system", content: "You are a helpful assistant." },
-                { role: "user", content: message }
-              ],
-              temperature: 0.7
-            })
-          });
-
-          if (!res.ok) {
-              const errorJson = await res.json().catch(() => ({ error: 'Unknown worker error or invalid JSON response.' }));
-              throw new Error(errorJson.error || `HTTP error! Status: ${res.status}`);
+    // FirebaseUI configuration
+    const uiConfig = {
+      callbacks: {
+        signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+          // User successfully signed in.
+          // Return type determines whether we continue the screen flow or redirect.
+          const urlParams = new URLSearchParams(window.location.search);
+          const returnToUrl = urlParams.get('returnTo');
+          if (returnToUrl) {
+            window.location.assign(decodeURIComponent(returnToUrl));
+            return false; // Prevent FirebaseUI from redirecting
           }
-
-          const data = await res.json();
-          const botResponseContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
-
-          // Update the content of the thinking bubble with the actual AI response
-          if (currentThinkingBubble) {
-              currentThinkingBubble.innerHTML = botResponseContent;
-              currentThinkingBubble.classList.remove('thinking'); // Remove the 'thinking' class and its specific styles
-              // After updating the content, tell MathJax to render any new math expressions
-              if (typeof MathJax !== 'undefined') {
-                MathJax.typesetPromise([currentThinkingBubble]).then(() => {
-                  console.log('MathJax typesetting complete for new message.');
-                }).catch((err) => console.error('MathJax typesetting failed:', err));
-              }
-          }
-
-        } catch (err) {
-          // Handle errors during the fetch operation
-          if (currentThinkingBubble) {
-              currentThinkingBubble.innerHTML = `[Error] ${err.message}`;
-              currentThinkingBubble.classList.remove('thinking');
-          } else {
-               // Fallback if currentThinkingBubble was not set for some reason
-              addMessage(`[Error] ${err.message}`, 'bot');
-          }
-           // Use the new displayStatusMessage for fetch errors
-          displayStatusMessage(`AI Error: ${err.message}`, 5000); // Show for 5 seconds
-        } finally {
-          currentThinkingBubble = null; // Clear the reference to the thinking bubble
-          chat.scrollTop = chat.scrollHeight; // Ensure scroll after thinking done
+          // If no 'returnTo' parameter, explicitly redirect to Jerry Mark Ten
+          window.location.assign('https://jerrymarkten.jeremyworld.org/');
+          return false; // Prevent FirebaseUI from redirecting
+        },
+        uiShown: function() {
+          // The widget is rendered.
+          // Hide the loader.
+          loader.style.display = 'none';
         }
-      }, delayMilliseconds); // Apply the defined delay here
+      },
+      // Use 'redirect' flow for robustness
+      signInFlow: 'redirect',
+      // Specify the URL to redirect to after successful sign-in
+      signInSuccessUrl: 'https://jerrymarkten.jeremyworld.org/', // Explicitly set success URL
+
+      signInOptions: [
+        {
+          provider: firebase.auth.EmailAuthProvider.PROVIDER_ID,
+          requireDisplayName: false, // Set to true if you want users to provide a display name on sign up.
+          disableSignUp: false // False means both sign-in and sign-up are allowed for Email/Password.
+        }
+      ],
+      // Strongly recommended to prevent browser credential helper from interfering with FirebaseUI
+      credentialHelper: firebaseui.auth.CredentialHelper.NONE, 
+      
+      tosUrl: 'https://jeremyworld.org/terms-of-service', // Replace with your actual TOS URL
+      privacyPolicyUrl: 'https://jeremyworld.org/privacy-policy' // Replace with your actual Privacy Policy URL
+    };
+
+    // Initialize the FirebaseUI Widget.
+    const ui = new firebaseui.auth.AuthUI(firebase.auth());
+
+    // --- Authentication State Observer ---
+    auth.onAuthStateChanged(function(user) {
+      loader.style.display = 'none'; // Hide loader once auth state is determined
+      if (user) {
+        // User is signed in.
+        firebaseUiContainer.style.display = 'none'; // Hide FirebaseUI widget
+        signOutInfoDiv.style.display = 'block'; // Show sign-out info
+        userEmailDisplay.textContent = user.email || user.displayName || 'N/A';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnToUrl = urlParams.get('returnTo');
+        if (returnToUrl) {
+            backToSiteButton.style.display = 'inline-block'; // Show back button if 'returnTo' exists
+            backToSiteButton.onclick = () => window.location.assign(decodeURIComponent(returnToUrl));
+        } else {
+            backToSiteButton.style.display = 'none'; // Hide if no 'returnTo'
+        }
+
+      } else {
+        // User is signed out.
+        firebaseUiContainer.style.display = 'block'; // Show FirebaseUI widget
+        signOutInfoDiv.style.display = 'none'; // Hide sign-out info
+        // Start FirebaseUI only if the container is visible and UI is not already started
+        // FIXED: Changed !ui.is to !ui.isStarted()
+        if (firebaseUiContainer.style.display !== 'none' && !ui.isStarted()) { 
+          ui.start('#firebaseui-auth-container', uiConfig);
+        }
+      }
     });
 
-    // --- Authentication Button Handlers ---
-    goToLoginButton.addEventListener('click', function() {
-        // Redirect to your main login hub (login.jeremyworld.org)
-        // You can optionally pass the current URL as a returnTo parameter
-        const currentUrl = encodeURIComponent(window.location.href);
-        window.location.href = `https://login.jeremyworld.org/?returnTo=${currentUrl}`;
-        // Make sure to replace login.jeremyworld.org with your actual login hub URL
-    });
-
-    logoutButtonProject.addEventListener('click', function() {
-        auth.signOut().then(function() {
-            console.log('User signed out from Jerry Mark Ten.');
-            // onAuthStateChanged will handle hiding the chat and showing login prompt
-        }).catch(function(error) {
-            console.error('Error signing out:', error);
-            // Use the new displayStatusMessage for logout errors
-            displayStatusMessage(`Sign Out Error: ${error.message}`, 5000); // Show for 5 seconds
-        });
+    // --- Sign Out Button Handler ---
+    signOutButton.addEventListener('click', function() {
+      auth.signOut().then(function() {
+        console.log('User signed out from Login Hub.');
+        // onAuthStateChanged will handle hiding sign-out info and showing FirebaseUI
+      }).catch(function(error) {
+        console.error('Error signing out: ', error);
+        alert('Error signing out: ' + error.message); // Simple alert for sign-out errors
+      });
     });
   </script>
 </body>
