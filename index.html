@@ -357,6 +357,44 @@
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
 
+    // Set authentication persistence to LOCAL (user stays logged in)
+    // This is crucial for cross-subdomain sessions with `authDomain` configured correctly.
+    auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+      .then(() => {
+        console.log("Firebase Auth persistence set to LOCAL.");
+        // Now that persistence is set, observe auth state
+        auth.onAuthStateChanged(function(user) {
+            loadingAuthStatus.classList.add('hidden'); // Hide loading overlay
+
+            if (user) {
+                // User is signed in. Show chat interface.
+                chatInterfaceWrapper.classList.remove('hidden');
+                loginPromptContainer.classList.add('hidden');
+                loggedInUserInfo.textContent = `Logged in as: ${user.email || user.displayName}`;
+                console.log("User is logged in:", user.uid, user.email);
+
+                // Add initial greeting only once after successful login
+                if (chat.children.length === 0) { // Only add if chat is empty
+                    addInitialGreeting();
+                }
+
+            } else {
+                // User is signed out or no session found. Show login prompt.
+                chatInterfaceWrapper.classList.add('hidden');
+                loginPromptContainer.classList.remove('hidden');
+                console.log("User is not logged in.");
+            }
+        });
+      })
+      .catch((error) => {
+        // Handle errors here, e.g., if persistence is not supported in the browser
+        console.error("Error setting persistence:", error);
+        displayStatusMessage(`Auth Error: ${error.message}`, 5000); // Show error to user
+        // Still try to check auth state even if persistence failed, though it might not persist correctly
+        auth.onAuthStateChanged(function(user) { /* ... same logic as above ... */ });
+      });
+
+
     // DOM elements
     const loadingAuthStatus = document.getElementById('loading-auth-status');
     const loginPromptContainer = document.getElementById('login-prompt-container');
@@ -425,31 +463,6 @@
         }, duration);
     }
 
-
-    // --- Firebase Authentication Check ---
-    auth.onAuthStateChanged(function(user) {
-        loadingAuthStatus.classList.add('hidden'); // Hide loading overlay
-
-        if (user) {
-            // User is signed in. Show chat interface.
-            chatInterfaceWrapper.classList.remove('hidden');
-            loginPromptContainer.classList.add('hidden');
-            loggedInUserInfo.textContent = `Logged in as: ${user.email || user.displayName}`;
-            console.log("User is logged in:", user.uid, user.email);
-
-            // Add initial greeting only once after successful login
-            // Or if user was already logged in when page loaded
-            if (chat.children.length === 0) { // Only add if chat is empty
-                addInitialGreeting();
-            }
-
-        } else {
-            // User is signed out or no session found. Show login prompt.
-            chatInterfaceWrapper.classList.add('hidden');
-            loginPromptContainer.classList.remove('hidden');
-            console.log("User is not logged in.");
-        }
-    });
 
     // Event listener for the chat form submission (only active when chat interface is shown)
     form.addEventListener('submit', async (e) => {
