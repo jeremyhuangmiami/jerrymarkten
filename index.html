@@ -1,186 +1,367 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jerry Mark Ten Chat</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-    <style>
-        :root {
-            --bg-dark: #202020;
-            --bg-medium: #303030;
-            --text-light: #f0f0f0;
-            --text-medium: #b0b0b0;
-            --accent-blue: #008CBA;
-            --accent-blue-dark: #007095;
-            --error-red: #dc3545;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Jerry Mark Ten</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Softer Dark Mode Palette */
+      --bg-dark: #202020; /* Darker charcoal */
+      --bg-medium: #303030; /* Lighter charcoal for elements */
+      --bg-light: #404040; /* Even lighter for borders/dividers */
+      --text-light: #f0f0f0; /* Near white for main text */
+      --text-medium: #b0b0b0; /* Softer gray for secondary text */
+
+      /* Accent Color: Teal-Blue */
+      --accent-blue: #008CBA;
+      --accent-blue-dark: #007095;
+
+      /* Message Bubble Colors */
+      --message-user-bg: var(--accent-blue); /* Teal-blue for user messages */
+      --message-bot-bg: var(--bg-medium); /* Consistent with medium background */
+
+      /* Variable for loading bar animation duration (set by JS) */
+      --loading-duration: 1.5s; /* Default, will be overridden by JS */
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-light);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden; /* Prevent body scroll, main handles chat scroll */
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      overflow-y: auto; /* Enables vertical scrolling for chat messages */
+      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+      padding-bottom: 1.5rem; /* Add space for input field not to overlap last message */
+    }
+
+    .message {
+      background: var(--message-bot-bg);
+      border-radius: 1.2rem; /* Softer rounded corners */
+      padding: 0.9rem 1.2rem;
+      margin: 0.6rem 0;
+      max-width: 80%; /* Slightly wider messages */
+      word-wrap: break-word; /* Ensure long words break */
+      line-height: 1.5;
+      font-size: 0.95rem;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Softer shadow */
+      animation: fadeIn 0.3s ease-out; /* Fade in animation */
+    }
+
+    .user {
+      align-self: flex-end;
+      background: var(--message-user-bg);
+      color: white; /* White text on blue */
+      border-bottom-right-radius: 0.3rem; /* Slightly different corner for visual appeal */
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* More pronounced shadow for user */
+    }
+
+    .bot {
+      align-self: flex-start;
+      border-bottom-left-radius: 0.3rem; /* Slightly different corner for visual appeal */
+    }
+
+    /* Styling for the entire thinking message bubble container */
+    .message.bot.thinking {
+      display: flex;
+      flex-direction: column; /* Stack GIF and loading info vertically */
+      align-items: flex-start; /* Align content to the left inside the bubble */
+      justify-content: flex-start;
+      /* Inherits standard bubble padding, background, border-radius, box-shadow from .message.bot */
+    }
+
+    /* Styles for the GIF itself within the thinking bubble */
+    .thinking-gif {
+      width: 120px; /* Adjust size as needed */
+      height: 120px; /* Maintain aspect ratio */
+      border-radius: 1.0rem; /* Rounded corners for the GIF */
+      object-fit: cover; /* Ensures the GIF covers the area without distortion */
+      display: block; /* Remove extra space below image */
+      margin-bottom: 0.8rem; /* Space below the GIF, separating it from the text */
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Optional: slight shadow on GIF */
+    }
+
+    /* Container for loading text and bar */
+    .loading-info {
+      width: 100%; /* Make it span the width of its parent bubble padding */
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .loading-text {
+      margin-bottom: 0.5rem; /* Space between text and bar */
+      font-weight: 500; /* Slightly bolder text */
+      color: var(--text-medium); /* Softer text color */
+      font-size: 0.85em; /* Slightly smaller text for info */
+    }
+
+    .loading-bar-container {
+      width: 100%;
+      height: 8px; /* Height of the bar */
+      background: var(--bg-light); /* Background of the bar track */
+      border-radius: 4px; /* Rounded corners for the bar container */
+      overflow: hidden; /* Ensures the inner bar respects corners */
+    }
+
+    .loading-bar {
+      height: 100%;
+      width: 0%; /* Starts at 0% */
+      background: var(--accent-blue); /* Color of the loading progress */
+      border-radius: 4px; /* Rounded corners for the bar itself */
+      animation: loadingProgress var(--loading-duration) linear forwards; /* Controlled by JS variable */
+    }
+
+    @keyframes loadingProgress {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+
+    form {
+      display: flex;
+      padding: 1rem;
+      border-top: 1px solid var(--bg-light); /* Subtle separator */
+      background: var(--bg-dark);
+      align-items: center; /* Vertically align items in the form */
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: var(--bg-medium);
+      border: none; /* No border for a cleaner look */
+      border-radius: 2.5rem; /* More rounded */
+      padding: 1rem 1.2rem; /* Increased padding for better touch area */
+      color: var(--text-light);
+      font-size: 1rem;
+      outline: none; /* Remove outline on focus */
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); /* Inner shadow for depth */
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input[type="text"]::placeholder {
+      color: var(--text-medium);
+      opacity: 0.7;
+    }
+
+    input[type="text"]:focus {
+      background: var(--bg-light);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 2px var(--accent-blue); /* Focus ring */
+    }
+
+    button {
+      background: var(--accent-blue);
+      color: white;
+      border: none;
+      margin-left: 0.75rem; /* Increased margin */
+      padding: 0;
+      border-radius: 50%;
+      font-size: 1.4rem; /* Larger icon */
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 3rem; /* Larger button for better touch */
+      min-height: 3rem;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* More pronounced shadow */
+      transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    button:hover {
+      background: var(--accent-blue-dark);
+      transform: translateY(-2px); /* Slightly more lift on hover */
+      box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-medium);
+      padding: 1rem 1rem 0.8rem;
+      background: var(--bg-dark);
+      border-top: 1px solid var(--bg-light); /* Consistent separator */
+    }
+
+    footer span {
+      color: #888;
+      font-style: italic;
+    }
+
+    /* Adjust MathJax rendering for dark theme */
+    .MathJax {
+      color: var(--text-light) !important;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']] // Define inline math delimiters
+      },
+      // Ensure MathJax processes new content added dynamically
+      startup: {
+        ready: () => {
+          console.log('MathJax is ready!');
+          MathJax.startup.defaultReady();
         }
-        body {
-            margin: 0;
-            font-family: 'Inter', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-light);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 1rem;
-            box-sizing: border-box;
-        }
-        .container {
-            background-color: var(--bg-medium);
-            padding: 2.5rem 2rem;
-            border-radius: 12px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
-            text-align: center;
-            max-width: 600px;
-            width: 100%;
-        }
-        h1 {
-            color: var(--accent-blue);
-            margin-bottom: 1.5rem;
-            font-size: 2.2rem;
-        }
-        p {
-            color: var(--text-medium);
-            font-size: 1.1rem;
-            line-height: 1.6;
-            margin-bottom: 2rem;
-        }
-        #auth-status {
-            margin-bottom: 1.5rem;
-            font-size: 1rem;
-            color: var(--text-light);
-        }
-        #login-redirect-message {
-            color: var(--error-red);
-            font-weight: bold;
-            margin-top: 1rem;
-        }
-        #chat-interface {
-            margin-top: 2rem;
-            border-top: 1px solid var(--bg-dark);
-            padding-top: 1.5rem;
-            text-align: left;
-        }
-        #chat-interface p {
-            font-size: 0.95rem;
-            color: var(--text-medium);
-            margin-bottom: 0.5rem;
-        }
-        .sign-out-button {
-            background-color: #dc3545; /* Red for sign out */
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background-color 0.2s ease, transform 0.2s ease;
-            margin-top: 1rem;
-        }
-        .sign-out-button:hover {
-            background-color: #c82333;
-            transform: translateY(-2px);
-        }
-        .sign-out-button:active {
-            transform: translateY(0);
-        }
-    </style>
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Jerry Mark Ten</h1>
-        <div id="auth-status">Loading authentication status...</div>
-        <div id="chat-content">
-            <p id="access-required-message">Access Required: Please log in or register first before chatting with Jerry Mark Ten.</p>
-            <p id="login-redirect-message" style="display:none;">Redirecting to login...</p>
-            <div id="chat-interface" style="display:none;">
-                <p><strong>Welcome to the chat!</strong></p>
-                <p>This is where your chat interface with Jerry Mark Ten would appear.</p>
-                <p>User-specific content will go here.</p>
-            </div>
-            <button id="sign-out-button" class="sign-out-button" style="display:none;">Sign Out</button>
+  <main id="chat"></main>
+
+  <form id="chat-form">
+    <input type="text" id="user-input" placeholder="Type your message..." required />
+    <button type="submit">&#x27A4;</button>
+  </form>
+
+  <footer>
+    jeremyworld.org | jerrymarkten@jeremyworld.org | donate.jeremyworld.org<br>
+    <span>AI for reference only</span>
+  </footer>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('user-input');
+
+    // GIF URL for the thinking animation
+    const thinkingGifUrl = 'https://i.giphy.com/koxVXnnmaQwllyovVG.webp';
+    let currentThinkingBubble = null; // To hold the reference to the thinking message bubble
+
+    // Define the delay here (in milliseconds) before the AI request is sent
+    // Adjust this value to control how long the GIF plays and the loading bar animates.
+    const delayMilliseconds = 1500; // Example: 1.5 seconds
+
+    // Set the CSS variable for animation duration to match the JS delay
+    // This allows the CSS animation to automatically complete at the end of the delay.
+    document.documentElement.style.setProperty('--loading-duration', `${delayMilliseconds / 1000}s`);
+
+    // Helper function to add messages to the chat interface
+    function addMessage(content, role, isThinking = false) {
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      if (isThinking) {
+        div.classList.add('thinking'); // Add a class for thinking state styling
+      }
+      div.innerHTML = content; // Set content directly
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight; // Scroll to the newest message
+      return div; // Return the element so its content can be updated/processed
+    }
+
+    // Function to show the GIF, loading text, and bar in a message bubble
+    function showLoadingIndicatorWithGif() {
+      const loadingHtml = `
+        <img src="${thinkingGifUrl}" alt="Bot thinking..." class="thinking-gif" />
+        <div class="loading-info">
+          <div class="loading-text">Gathering information from Jeremy's brain...</div>
+          <div class="loading-bar-container">
+            <div class="loading-bar"></div>
+          </div>
         </div>
-    </div>
+      `;
+      currentThinkingBubble = addMessage(loadingHtml, 'bot', true);
+      chat.scrollTop = chat.scrollHeight; // Ensure it's visible immediately
+    }
 
-    <script>
-        // --- Test Log to confirm script execution ---
-        console.log("JERRY MARK TEN SCRIPT IS RUNNING!");
+    // Function to add the initial greeting message when the page loads
+    function addInitialGreeting() {
+      addMessage("Hi, I'm Jerry. How can I help?", 'bot');
+    }
 
-        // --- YOUR FIREBASE CONFIGURATION (MUST BE IDENTICAL TO LOGIN HUB) ---
-        const firebaseConfig = {
-            apiKey: "AIzaSyCyPk7d26WwhHM34MVbSHBMrnfSTtT213Y",
-            authDomain: "jeremyworld-auth.firebaseapp.com",
-            projectId: "jeremyworld-auth",
-            storageBucket: "jeremyworld-auth.firebasestorage.app",
-            messagingSenderId: "830728575641",
-            appId: "1:830728575641:web:3d22b3b15127f0ae93f608"
-        };
-        // --- END OF FIREBASE CONFIGURATION ---
+    // Call the initial greeting function when the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', addInitialGreeting);
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
+    // Event listener for the chat form submission
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault(); // Prevent default form submission and page reload
+      const message = input.value.trim();
+      if (!message) return; // Do nothing if the input is empty
 
-        // DOM elements
-        const authStatusDiv = document.getElementById('auth-status');
-        const accessRequiredMessage = document.getElementById('access-required-message');
-        const loginRedirectMessage = document.getElementById('login-redirect-message');
-        const chatInterfaceDiv = document.getElementById('chat-interface');
-        const signOutButton = document.getElementById('sign-out-button');
+      // Add user message to the chat
+      addMessage(message, 'user');
+      input.value = ''; // Clear the input field
 
-        // Set persistence for authentication state
-        // This ensures the login state persists across different sessions and subdomains
-        auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-            .then(() => {
-                console.log("Firebase Auth persistence set to LOCAL.");
-                // Listen for authentication state changes *after* persistence is set
-                auth.onAuthStateChanged(function(user) {
-                    if (user) {
-                        // User is signed in.
-                        console.log("User is logged in:", user.uid, user.email);
-                        authStatusDiv.textContent = `Logged in as: ${user.email}`;
-                        accessRequiredMessage.style.display = 'none';
-                        loginRedirectMessage.style.display = 'none';
-                        chatInterfaceDiv.style.display = 'block';
-                        signOutButton.style.display = 'inline-block';
-                    } else {
-                        // User is signed out.
-                        console.log("User is not logged in. Redirecting to login hub.");
-                        authStatusDiv.textContent = "Not logged in.";
-                        accessRequiredMessage.style.display = 'block';
-                        loginRedirectMessage.style.display = 'block';
-                        chatInterfaceDiv.style.display = 'none';
-                        signOutButton.style.display = 'none';
+      // Show the GIF and loading indicator where the bot's response will appear
+      showLoadingIndicatorWithGif();
 
-                        // Redirect to login page with a 'returnTo' parameter
-                        const currentUrl = encodeURIComponent(window.location.href);
-                        window.location.assign(`https://login.jeremyworld.org/?returnTo=${currentUrl}`);
-                    }
-                });
+      // Introduce a delay before making the actual API call to Cloudflare Worker
+      setTimeout(async () => {
+        try {
+          // Your actual Cloudflare Worker URL
+          const workerUrl = 'https://jerrymarkten.jeremyhuangmiami.workers.dev/';
+          const res = await fetch(workerUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              model: "gemma2-9b-it",
+              messages: [
+                { role: "system", content: "You are a helpful assistant." },
+                { role: "user", content: message }
+              ],
+              temperature: 0.7
             })
-            .catch((error) => {
-                // Handle errors from setPersistence
-                console.error("Error setting persistence:", error);
-                authStatusDiv.textContent = `Error: ${error.message}. Please try again.`;
-                accessRequiredMessage.style.display = 'block';
-                loginRedirectMessage.style.display = 'none';
-            });
+          });
 
-        // Sign out button handler
-        signOutButton.addEventListener('click', function() {
-            auth.signOut().then(function() {
-                console.log('User signed out from Jerry Mark Ten.');
-                // onAuthStateChanged will handle the UI update and redirect
-            }).catch(function(error) {
-                console.error('Error signing out:', error);
-                alert('Error signing out: ' + error.message);
-            });
-        });
-    </script>
+          if (!res.ok) {
+              const errorJson = await res.json().catch(() => ({ error: 'Unknown worker error or invalid JSON response.' }));
+              throw new Error(errorJson.error || `HTTP error! Status: ${res.status}`);
+          }
+
+          const data = await res.json();
+          const botResponseContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
+
+          // Update the content of the thinking bubble with the actual AI response
+          if (currentThinkingBubble) {
+              currentThinkingBubble.innerHTML = botResponseContent;
+              currentThinkingBubble.classList.remove('thinking'); // Remove the 'thinking' class and its specific styles
+              // After updating the content, tell MathJax to render any new math expressions
+              if (typeof MathJax !== 'undefined') {
+                MathJax.typesetPromise([currentThinkingBubble]).then(() => {
+                  console.log('MathJax typesetting complete for new message.');
+                }).catch((err) => console.error('MathJax typesetting failed:', err));
+              }
+          }
+
+        } catch (err) {
+          // Handle errors during the fetch operation
+          if (currentThinkingBubble) {
+              currentThinkingBubble.innerHTML = `[Error] ${err.message}`;
+              currentThinkingBubble.classList.remove('thinking');
+          } else {
+               // Fallback if currentThinkingBubble was not set for some reason
+              addMessage(`[Error] ${err.message}`, 'bot');
+          }
+        } finally {
+          currentThinkingBubble = null; // Clear the reference to the thinking bubble
+        }
+      }, delayMilliseconds); // Apply the defined delay here
+    });
+  </script>
 </body>
 </html>
