@@ -6,7 +6,6 @@
   <title>Jerry Mark Ten</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Your original chatbot styles - completely unchanged */
     :root {
       /* Softer Dark Mode Palette */
       --bg-dark: #202020; /* Darker charcoal */
@@ -27,103 +26,359 @@
       --loading-duration: 1.5s; /* Default, will be overridden by JS */
     }
 
-    /* [Previous CSS remains exactly the same until the new popup styles] */
-
-    /* NEW: Login Popup Styles with centered button */
-    #login-popup {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .login-popup-content {
-      background: var(--bg-medium);
-      padding: 2rem;
-      border-radius: 8px;
-      max-width: 400px;
-      width: 90%;
-      text-align: center;
-    }
-
-    .login-popup-content h2 {
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-dark);
       color: var(--text-light);
-      margin-bottom: 1rem;
-    }
-
-    .login-popup-content p {
-      color: var(--text-medium);
-      margin-bottom: 1.5rem;
-    }
-
-    .login-popup-buttons {
       display: flex;
-      justify-content: center; /* This centers the button */
-      width: 100%;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden; /* Prevent body scroll, main handles chat scroll */
     }
 
-    .login-popup-button {
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      overflow-y: auto; /* Enables vertical scrolling for chat messages */
+      -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+      padding-bottom: 1.5rem; /* Add space for input field not to overlap last message */
+    }
+
+    .message {
+      background: var(--message-bot-bg);
+      border-radius: 1.2rem; /* Softer rounded corners */
+      padding: 0.9rem 1.2rem;
+      margin: 0.6rem 0;
+      max-width: 80%; /* Slightly wider messages */
+      word-wrap: break-word; /* Ensure long words break */
+      line-height: 1.5;
+      font-size: 0.95rem;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Softer shadow */
+      animation: fadeIn 0.3s ease-out; /* Fade in animation */
+    }
+
+    .user {
+      align-self: flex-end;
+      background: var(--message-user-bg);
+      color: white; /* White text on blue */
+      border-bottom-right-radius: 0.3rem; /* Slightly different corner for visual appeal */
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* More pronounced shadow for user */
+    }
+
+    .bot {
+      align-self: flex-start;
+      border-bottom-left-radius: 0.3rem; /* Slightly different corner for visual appeal */
+    }
+
+    /* Styling for the entire thinking message bubble container */
+    .message.bot.thinking {
+      display: flex;
+      flex-direction: column; /* Stack GIF and loading info vertically */
+      align-items: flex-start; /* Align content to the left inside the bubble */
+      justify-content: flex-start;
+      /* Inherits standard bubble padding, background, border-radius, box-shadow from .message.bot */
+    }
+
+    /* Styles for the GIF itself within the thinking bubble */
+    .thinking-gif {
+      width: 120px; /* Adjust size as needed */
+      height: 120px; /* Maintain aspect ratio */
+      border-radius: 1.0rem; /* Rounded corners for the GIF */
+      object-fit: cover; /* Ensures the GIF covers the area without distortion */
+      display: block; /* Remove extra space below image */
+      margin-bottom: 0.8rem; /* Space below the GIF, separating it from the text */
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Optional: slight shadow on GIF */
+    }
+
+    /* Container for loading text and bar */
+    .loading-info {
+      width: 100%; /* Make it span the width of its parent bubble padding */
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .loading-text {
+      margin-bottom: 0.5rem; /* Space between text and bar */
+      font-weight: 500; /* Slightly bolder text */
+      color: var(--text-medium); /* Softer text color */
+      font-size: 0.85em; /* Slightly smaller text for info */
+    }
+
+    .loading-bar-container {
+      width: 100%;
+      height: 8px; /* Height of the bar */
+      background: var(--bg-light); /* Background of the bar track */
+      border-radius: 4px; /* Rounded corners for the bar container */
+      overflow: hidden; /* Ensures the inner bar respects corners */
+    }
+
+    .loading-bar {
+      height: 100%;
+      width: 0%; /* Starts at 0% */
+      background: var(--accent-blue); /* Color of the loading progress */
+      border-radius: 4px; /* Rounded corners for the bar itself */
+      animation: loadingProgress var(--loading-duration) linear forwards; /* Controlled by JS variable */
+    }
+
+    @keyframes loadingProgress {
+      from { width: 0%; }
+      to { width: 100%; }
+    }
+
+    form {
+      display: flex;
+      padding: 1rem;
+      border-top: 1px solid var(--bg-light); /* Subtle separator */
+      background: var(--bg-dark);
+      align-items: center; /* Vertically align items in the form */
+    }
+
+    input[type="text"] {
+      flex: 1;
+      background: var(--bg-medium);
+      border: none; /* No border for a cleaner look */
+      border-radius: 2.5rem; /* More rounded */
+      padding: 1rem 1.2rem; /* Increased padding for better touch area */
+      color: var(--text-light);
+      font-size: 1rem;
+      outline: none; /* Remove outline on focus */
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); /* Inner shadow for depth */
+      transition: background 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    input[type="text"]::placeholder {
+      color: var(--text-medium);
+      opacity: 0.7;
+    }
+
+    input[type="text"]:focus {
+      background: var(--bg-light);
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 0 2px var(--accent-blue); /* Focus ring */
+    }
+
+    button {
       background: var(--accent-blue);
       color: white;
       border: none;
-      padding: 0.8rem 1.5rem;
-      border-radius: 4px;
-      font-size: 1rem;
+      margin-left: 0.75rem; /* Increased margin */
+      padding: 0;
+      border-radius: 50%;
+      font-size: 1.4rem; /* Larger icon */
       cursor: pointer;
-      transition: background 0.2s;
-      width: auto; /* Let the button size naturally */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 3rem; /* Larger button for better touch */
+      min-height: 3rem;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3); /* More pronounced shadow */
+      transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .login-popup-button:hover {
+    button:hover {
       background: var(--accent-blue-dark);
+      transform: translateY(-2px); /* Slightly more lift on hover */
+      box-shadow: 0 5px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.7rem;
+      color: var(--text-medium);
+      padding: 1rem 1rem 0.8rem;
+      background: var(--bg-dark);
+      border-top: 1px solid var(--bg-light); /* Consistent separator */
+    }
+
+    footer span {
+      color: #888;
+      font-style: italic;
+    }
+
+    /* Adjust MathJax rendering for dark theme */
+    .MathJax {
+      color: var(--text-light) !important;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
   </style>
-  <!-- [Rest of your head content remains exactly the same] -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']] // Define inline math delimiters
+      },
+      // Ensure MathJax processes new content added dynamically
+      startup: {
+        ready: () => {
+          console.log('MathJax is ready!');
+          MathJax.startup.defaultReady();
+        }
+      }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-  <!-- NEW: Login Popup with centered button -->
-  <div id="login-popup">
-    <div class="login-popup-content">
-      <h2>Authentication Required</h2>
-      <p>Please log in to access JeremyWorld's chatbot</p>
-      <div class="login-popup-buttons">
-        <button class="login-popup-button" id="login-redirect-button">Login to JeremyWorld</button>
-      </div>
-    </div>
-  </div>
+  <main id="chat"></main>
 
-  <!-- [Rest of your original HTML remains exactly the same] -->
+  <form id="chat-form">
+    <input type="text" id="user-input" placeholder="Type your message..." required />
+    <button type="submit">&#x27A4;</button>
+  </form>
+
+  <footer>
+    jeremyworld.org | jerrymarkten@jeremyworld.org | donate.jeremyworld.org<br>
+    <span>AI for reference only</span>
+  </footer>
 
   <script>
-    // [Your original JavaScript remains exactly the same until the new additions]
-
-    // NEW: Authentication Check
-    function checkAuth() {
-      // Check for auth cookie (you'll need to set this when users log in)
-      const cookies = document.cookie.split(';').map(c => c.trim());
-      const authCookie = cookies.find(c => c.startsWith('jeremyworld-auth='));
+    // Check for authentication cookie
+    function checkAuthCookie() {
+      const cookies = document.cookie.split(';');
+      const authCookie = cookies.find(cookie => 
+        cookie.trim().startsWith('jeremyworld-auth=')
+      );
       
-      if (!authCookie || authCookie.split('=')[1] !== 'true') {
-        // Show login popup if not authenticated
-        document.getElementById('login-popup').style.display = 'flex';
+      if (!authCookie) {
+        // Redirect to login page if cookie not found
+        window.location.href = 'https://login.jeremyworld.org';
+        return false;
       }
+      return true;
     }
 
-    // NEW: Redirect to login page
-    document.getElementById('login-redirect-button').addEventListener('click', () => {
-      window.location.href = 'https://login.jeremyworld.org';
-    });
+    // Only proceed with chat functionality if authenticated
+    if (checkAuthCookie()) {
+      const chat = document.getElementById('chat');
+      const form = document.getElementById('chat-form');
+      const input = document.getElementById('user-input');
 
-    // NEW: Check auth on page load
-    window.addEventListener('load', checkAuth);
+      // GIF URL for the thinking animation
+      const thinkingGifUrl = 'https://i.giphy.com/koxVXnnmaQwllyovVG.webp';
+      let currentThinkingBubble = null; // To hold the reference to the thinking message bubble
 
-    // [Rest of your original JavaScript remains exactly the same]
+      // Define the delay here (in milliseconds) before the AI request is sent
+      // Adjust this value to control how long the GIF plays and the loading bar animates.
+      const delayMilliseconds = 1500; // Example: 1.5 seconds
+
+      // Set the CSS variable for animation duration to match the JS delay
+      // This allows the CSS animation to automatically complete at the end of the delay.
+      document.documentElement.style.setProperty('--loading-duration', `${delayMilliseconds / 1000}s`);
+
+      // Helper function to add messages to the chat interface
+      function addMessage(content, role, isThinking = false) {
+        const div = document.createElement('div');
+        div.className = `message ${role}`;
+        if (isThinking) {
+          div.classList.add('thinking'); // Add a class for thinking state styling
+        }
+        div.innerHTML = content; // Set content directly
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight; // Scroll to the newest message
+        return div; // Return the element so its content can be updated/processed
+      }
+
+      // Function to show the GIF, loading text, and bar in a message bubble
+      function showLoadingIndicatorWithGif() {
+        const loadingHtml = `
+          <img src="${thinkingGifUrl}" alt="Bot thinking..." class="thinking-gif" />
+          <div class="loading-info">
+            <div class="loading-text">Gathering information from Jeremy's brain...</div>
+            <div class="loading-bar-container">
+              <div class="loading-bar"></div>
+            </div>
+          </div>
+        `;
+        currentThinkingBubble = addMessage(loadingHtml, 'bot', true);
+        chat.scrollTop = chat.scrollHeight; // Ensure it's visible immediately
+      }
+
+      // Function to add the initial greeting message when the page loads
+      function addInitialGreeting() {
+        addMessage("Hi, I'm Jerry. How can I help?", 'bot');
+      }
+
+      // Call the initial greeting function when the DOM is fully loaded
+      document.addEventListener('DOMContentLoaded', addInitialGreeting);
+
+      // Event listener for the chat form submission
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault(); // Prevent default form submission and page reload
+        const message = input.value.trim();
+        if (!message) return; // Do nothing if the input is empty
+
+        // Add user message to the chat
+        addMessage(message, 'user');
+        input.value = ''; // Clear the input field
+
+        // Show the GIF and loading indicator where the bot's response will appear
+        showLoadingIndicatorWithGif();
+
+        // Introduce a delay before making the actual API call to Cloudflare Worker
+        setTimeout(async () => {
+          try {
+            // Your actual Cloudflare Worker URL
+            const workerUrl = 'https://jerrymarkten.jeremyhuangmiami.workers.dev/';
+            const res = await fetch(workerUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                model: "gemma2-9b-it",
+                messages: [
+                  { role: "system", content: "You are a helpful assistant." },
+                  { role: "user", content: message }
+                ],
+                temperature: 0.7
+              })
+            });
+
+            if (!res.ok) {
+                const errorJson = await res.json().catch(() => ({ error: 'Unknown worker error or invalid JSON response.' }));
+                throw new Error(errorJson.error || `HTTP error! Status: ${res.status}`);
+            }
+
+            const data = await res.json();
+            const botResponseContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
+
+            // Update the content of the thinking bubble with the actual AI response
+            if (currentThinkingBubble) {
+                currentThinkingBubble.innerHTML = botResponseContent;
+                currentThinkingBubble.classList.remove('thinking'); // Remove the 'thinking' class and its specific styles
+                // After updating the content, tell MathJax to render any new math expressions
+                if (typeof MathJax !== 'undefined') {
+                  MathJax.typesetPromise([currentThinkingBubble]).then(() => {
+                    console.log('MathJax typesetting complete for new message.');
+                  }).catch((err) => console.error('MathJax typesetting failed:', err));
+                }
+            }
+
+          } catch (err) {
+            // Handle errors during the fetch operation
+            if (currentThinkingBubble) {
+                currentThinkingBubble.innerHTML = `[Error] ${err.message}`;
+                currentThinkingBubble.classList.remove('thinking');
+            } else {
+                 // Fallback if currentThinkingBubble was not set for some reason
+                addMessage(`[Error] ${err.message}`, 'bot');
+            }
+          } finally {
+            currentThinkingBubble = null; // Clear the reference to the thinking bubble
+          }
+        }, delayMilliseconds); // Apply the defined delay here
+      });
+    }
   </script>
 </body>
 </html>
