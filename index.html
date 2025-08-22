@@ -55,97 +55,97 @@
   </footer>
 
   <script>
-    // Check for authentication cookie
-    function checkAuthCookie() {
-      const cookies = document.cookie.split(';');
-      const authCookie = cookies.find(cookie => cookie.trim().startsWith('jeremyworld-auth='));
-      if (!authCookie) {
-        // Redirect to login page if cookie not found
-        window.location.href = 'https://jeremyworld.org/login.html';
-        return false;
+    const authWorkerUrl = "https://jeremyworld-auth.jeremyhuangmiami.workers.dev/check-session";
+
+    async function checkLogin() {
+      try {
+        const res = await fetch(authWorkerUrl, { method: "GET", credentials: "include" });
+        const data = await res.json();
+        if (!data.loggedIn) window.location.href = "https://jeremyworld.org/login.html";
+      } catch {
+        window.location.href = "https://jeremyworld.org/login.html";
       }
-      return true;
     }
 
-    if (checkAuthCookie()) {
-      const chat = document.getElementById('chat');
-      const form = document.getElementById('chat-form');
-      const input = document.getElementById('user-input');
-      const thinkingGifUrl = 'https://i.giphy.com/koxVXnnmaQwllyovVG.webp';
-      let currentThinkingBubble = null;
-      const delayMilliseconds = 1500;
-      document.documentElement.style.setProperty('--loading-duration', `${delayMilliseconds / 1000}s`);
+    checkLogin();
 
-      function addMessage(content, role, isThinking = false) {
-        const div = document.createElement('div');
-        div.className = `message ${role}`;
-        if (isThinking) div.classList.add('thinking');
-        div.innerHTML = content;
-        chat.appendChild(div);
-        chat.scrollTop = chat.scrollHeight;
-        return div;
-      }
+    const chat = document.getElementById('chat');
+    const form = document.getElementById('chat-form');
+    const input = document.getElementById('user-input');
+    const thinkingGifUrl = 'https://i.giphy.com/koxVXnnmaQwllyovVG.webp';
+    let currentThinkingBubble = null;
+    const delayMilliseconds = 1500;
+    document.documentElement.style.setProperty('--loading-duration', `${delayMilliseconds / 1000}s`);
 
-      function showLoadingIndicatorWithGif() {
-        const loadingHtml = `
-          <img src="${thinkingGifUrl}" alt="Bot thinking..." class="thinking-gif" />
-          <div class="loading-info">
-            <div class="loading-text">Gathering information from Jeremy's brain...</div>
-            <div class="loading-bar-container">
-              <div class="loading-bar"></div>
-            </div>
+    function addMessage(content, role, isThinking = false) {
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
+      if (isThinking) div.classList.add('thinking');
+      div.innerHTML = content;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+      return div;
+    }
+
+    function showLoadingIndicatorWithGif() {
+      const loadingHtml = `
+        <img src="${thinkingGifUrl}" alt="Bot thinking..." class="thinking-gif" />
+        <div class="loading-info">
+          <div class="loading-text">Gathering information from Jeremy's brain...</div>
+          <div class="loading-bar-container">
+            <div class="loading-bar"></div>
           </div>
-        `;
-        currentThinkingBubble = addMessage(loadingHtml, 'bot', true);
-        chat.scrollTop = chat.scrollHeight;
-      }
-
-      function addInitialGreeting() {
-        addMessage("Hi, I'm Jerry. How can I help?", 'bot');
-      }
-
-      document.addEventListener('DOMContentLoaded', addInitialGreeting);
-
-      form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const message = input.value.trim();
-        if (!message) return;
-        addMessage(message, 'user');
-        input.value = '';
-        showLoadingIndicatorWithGif();
-
-        setTimeout(async () => {
-          try {
-            const workerUrl = 'https://jerrymarkten.jeremyhuangmiami.workers.dev/';
-            const res = await fetch(workerUrl, {
-              method:'POST',
-              headers:{'Content-Type':'application/json'},
-              body: JSON.stringify({
-                model:"gemma2-9b-it",
-                messages:[
-                  { role:"system", content:"You are a helpful assistant." },
-                  { role:"user", content: message }
-                ],
-                temperature:0.7
-              })
-            });
-            if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-            const data = await res.json();
-            const botResponseContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
-            if (currentThinkingBubble) {
-              currentThinkingBubble.innerHTML = botResponseContent;
-              currentThinkingBubble.classList.remove('thinking');
-              if (typeof MathJax !== 'undefined') MathJax.typesetPromise([currentThinkingBubble]);
-            }
-          } catch (err) {
-            if (currentThinkingBubble) {
-              currentThinkingBubble.innerHTML = `[Error] ${err.message}`;
-              currentThinkingBubble.classList.remove('thinking');
-            } else addMessage(`[Error] ${err.message}`, 'bot');
-          } finally { currentThinkingBubble = null; }
-        }, delayMilliseconds);
-      });
+        </div>
+      `;
+      currentThinkingBubble = addMessage(loadingHtml, 'bot', true);
+      chat.scrollTop = chat.scrollHeight;
     }
+
+    function addInitialGreeting() {
+      addMessage("Hi, I'm Jerry. How can I help?", 'bot');
+    }
+
+    document.addEventListener('DOMContentLoaded', addInitialGreeting);
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const message = input.value.trim();
+      if (!message) return;
+      addMessage(message, 'user');
+      input.value = '';
+      showLoadingIndicatorWithGif();
+
+      setTimeout(async () => {
+        try {
+          const workerUrl = 'https://jerrymarkten.jeremyhuangmiami.workers.dev/';
+          const res = await fetch(workerUrl, {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify({
+              model:"gemma2-9b-it",
+              messages:[
+                { role:"system", content:"You are a helpful assistant." },
+                { role:"user", content: message }
+              ],
+              temperature:0.7
+            })
+          });
+          if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+          const data = await res.json();
+          const botResponseContent = data.choices?.[0]?.message?.content || "[Error: No reply]";
+          if (currentThinkingBubble) {
+            currentThinkingBubble.innerHTML = botResponseContent;
+            currentThinkingBubble.classList.remove('thinking');
+            if (typeof MathJax !== 'undefined') MathJax.typesetPromise([currentThinkingBubble]);
+          }
+        } catch (err) {
+          if (currentThinkingBubble) {
+            currentThinkingBubble.innerHTML = `[Error] ${err.message}`;
+            currentThinkingBubble.classList.remove('thinking');
+          } else addMessage(`[Error] ${err.message}`, 'bot');
+        } finally { currentThinkingBubble = null; }
+      }, delayMilliseconds);
+    });
   </script>
 </body>
 </html>
