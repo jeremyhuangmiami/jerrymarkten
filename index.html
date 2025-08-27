@@ -50,25 +50,12 @@
     <button type="submit">&#x27A4;</button>
   </form>
   <footer>
-    jeremyworld.org | jerrymarkten@jeremyworld.org | donate.jeremyworld.org<br>
+    jeremyworld.org | <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="ea808f989893878b98819e8f84aa808f988f87939d8598868ec485988d">[email&#160;protected]</a> | donate.jeremyworld.org<br>
     <span>AI for reference only</span>
   </footer>
 
+  <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script>
   <script>
-    const authWorkerUrl = "https://jeremyworld-auth.jeremyhuangmiami.workers.dev/check-session";
-
-    async function checkLogin() {
-      try {
-        const res = await fetch(authWorkerUrl, { method: "GET", credentials: "include" });
-        const data = await res.json();
-        if (!data.loggedIn) window.location.href = "https://jeremyworld.org/login.html";
-      } catch {
-        window.location.href = "https://jeremyworld.org/login.html";
-      }
-    }
-
-    checkLogin();
-
     const chat = document.getElementById('chat');
     const form = document.getElementById('chat-form');
     const input = document.getElementById('user-input');
